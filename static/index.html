@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>路演大师 · PitchMaster</title>
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --panel: #14141a;
+    --panel-2: #1b1b23;
+    --line: #282832;
+    --text: #ececf1;
+    --muted: #8b8b99;
+    --gold: #d9b45b;
+    --green: #58c08a;
+    --red: #e06a6a;
+    --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(1200px 600px at 50% -10%, #1b1a14 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    min-height: 100vh;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 56px 24px 80px; }
+  header { margin-bottom: 36px; }
+  .eyebrow { color: var(--gold); font-size: 12px; letter-spacing: 3px; text-transform: uppercase; }
+  h1 { font-size: 34px; margin: 10px 0 8px; letter-spacing: 1px; }
+  h1 span { color: var(--gold); }
+  .sub { color: var(--muted); font-size: 14px; line-height: 1.7; margin: 0; }
+
+  form {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+    display: grid;
+    gap: 12px;
+  }
+  .row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 12px 14px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus { border-color: var(--gold); }
+  input::placeholder { color: #55555f; }
+  button {
+    justify-self: start;
+    margin-top: 4px;
+    background: var(--gold);
+    color: #17140b;
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 26px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter .15s, opacity .15s;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .hint { color: var(--muted); font-size: 12px; }
+
+  #status { display: flex; align-items: center; gap: 10px; margin: 28px 0 16px; font-size: 14px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.live { background: var(--gold); box-shadow: 0 0 12px var(--gold); animation: pulse 1.4s infinite; }
+  .dot.done { background: var(--green); box-shadow: 0 0 12px var(--green); }
+  .dot.fail { background: var(--red); }
+  @keyframes pulse { 50% { opacity: .35; } }
+  #summary { margin-left: auto; color: var(--gold); font-size: 13px; font-family: var(--mono); }
+
+  #judges { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .judge {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    animation: rise .35s ease both;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  .judge.turn { border-color: rgba(88, 192, 138, .45); }
+  .judge.hold { border-color: rgba(224, 106, 106, .35); }
+  .judge.degraded { opacity: .6; }
+  .judge-head { display: flex; align-items: baseline; gap: 8px; }
+  .judge-name { font-weight: 700; font-size: 15px; }
+  .judge-dim { color: var(--muted); font-size: 12px; }
+  .judge-verdict { margin-left: auto; font-size: 11px; font-family: var(--mono); padding: 2px 8px; border-radius: 999px; }
+  .turn .judge-verdict { color: var(--green); background: rgba(88,192,138,.12); }
+  .hold .judge-verdict { color: var(--red); background: rgba(224,106,106,.12); }
+  .judge-score { font-family: var(--mono); font-size: 30px; margin: 10px 0 6px; }
+  .judge-score small { color: var(--muted); font-size: 13px; }
+  .judge-rationale { color: #c9c9d2; font-size: 13px; line-height: 1.65; margin: 0 0 8px; }
+  .judge-q { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 0; padding-left: 16px; }
+  .judge-q li { margin-bottom: 3px; }
+
+  #log {
+    margin-top: 28px;
+    background: #0d0d10;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.9;
+    color: var(--muted);
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  #log .t { color: #55555f; margin-right: 10px; }
+  #log .gold { color: var(--gold); }
+  #log .green { color: var(--green); }
+  #log .red { color: var(--red); }
+  .hidden { display: none !important; }
+  @media (max-width: 640px) {
+    main { padding-top: 36px; }
+    h1 { font-size: 27px; }
+    .row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">JUNCTION CHINA 2026 · MiMo Track</div>
+    <h1>路演<span>大师</span> PitchMaster</h1>
+    <p class="sub">投一个仓库，让五位 AI 评委先替你挑刺。<br>初评阶段：解剖员阅读代码 → 评委并行亮分。</p>
+  </header>
+
+  <form id="form">
+    <div>
+      <label for="repo">GitHub 仓库（必填）</label>
+      <input id="repo" name="repo" placeholder="https://github.com/owner/repo" autocomplete="off" required>
+    </div>
+    <div class="row">
+      <div>
+        <label for="prd">PRD 链接或摘要（选填，今晚不参与评分）</label>
+        <input id="prd" name="prd" placeholder="https://... 或一两句话" autocomplete="off">
+      </div>
+      <div>
+        <label for="demo">成品网址（选填，今晚不参与评分）</label>
+        <input id="demo" name="demo" placeholder="https://..." autocomplete="off">
+      </div>
+    </div>
+    <button id="start" type="submit">开始评审</button>
+    <div class="hint">提示：仓库会以浅克隆方式读取，只读不写。</div>
+  </form>
+
+  <section id="status" class="hidden">
+    <span id="dot" class="dot live"></span>
+    <span id="phase">准备中</span>
+    <span id="summary"></span>
+  </section>
+
+  <section id="judges"></section>
+  <section id="log" class="hidden"></section>
+</main>
+
+<script>
+(() => {
+  const PHASE_LABEL = {
+    created: "已创建",
+    loading: "读取仓库",
+    analyzing: "解剖代码",
+    judging: "评委初评",
+    initial_done: "初评完成",
+    rebuttal: "答辩",
+    review: "复议",
+    report: "报告",
+  };
+
+  const $ = (sel) => document.querySelector(sel);
+  const form = $("#form");
+  const startBtn = $("#start");
+  const repoInput = $("#repo");
+  const statusBar = $("#status");
+  const dot = $("#dot");
+  const phaseEl = $("#phase");
+  const summaryEl = $("#summary");
+  const judgesEl = $("#judges");
+  const logEl = $("#log");
+
+  let source = null;
+  let currentSession = null;
+  let finished = false;
+  const cards = new Map();
+
+  function now() {
+    const d = new Date();
+    return d.toTimeString().slice(0, 8);
+  }
+
+  function log(text, cls = "") {
+    logEl.classList.remove("hidden");
+    const line = document.createElement("div");
+    const t = document.createElement("span");
+    t.className = "t";
+    t.textContent = now();
+    const body = document.createElement("span");
+    body.className = cls;
+    body.textContent = text;
+    line.append(t, body);
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function setPhase(phase) {
+    phaseEl.textContent = PHASE_LABEL[phase] || phase;
+    if (finished) return;
+    dot.classList.toggle("live", phase !== "initial_done");
+  }
+
+  function el(tag, cls, text) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function renderVerdict(p) {
+    let card = cards.get(p.judge_id);
+    if (!card) {
+      card = el("article", "judge");
+      card.dataset.id = p.judge_id;
+      card.append(
+        el("div", "judge-head"),
+        el("div", "judge-score"),
+        el("p", "judge-rationale")
+      );
+      cards.set(p.judge_id, card);
+      judgesEl.appendChild(card);
+    }
+
+    const verdict = p.verdict === "turn" ? "turn" : "hold";
+    card.classList.remove("turn", "hold", "degraded");
+    card.classList.add(verdict);
+    if (p.degraded) card.classList.add("degraded");
+
+    const head = card.querySelector(".judge-head");
+    head.replaceChildren(
+      el("span", "judge-name", p.name || p.judge_id),
+      el("span", "judge-dim", p.dimension || ""),
+      el("span", "judge-verdict", verdict === "turn" ? "转身 TURN" : "留座 HOLD")
+    );
+
+    const score = card.querySelector(".judge-score");
+    score.replaceChildren();
+    score.append(document.createTextNode(String(p.score ?? 0)));
+    if (p.weight > 0) score.append(el("small", "", " / " + p.weight));
+
+    card.querySelector(".judge-rationale").textContent = p.rationale || "（无评语）";
+
+    if (Array.isArray(p.questions) && p.questions.length) {
+      let q = card.querySelector(".judge-q");
+      if (!q) {
+        q = el("ol", "judge-q");
+        card.appendChild(q);
+      }
+      q.replaceChildren(...p.questions.map((item) => el("li", "", item)));
+    }
+  }
+
+  function updateSummary() {
+    let score = 0;
+    let weight = 0;
+    for (const card of judgesEl.children) {
+      const id = card.dataset.id;
+      const raw = card.querySelector(".judge-score").textContent.split("/");
+      score += parseInt(raw[0], 10) || 0;
+      if (raw[1]) weight += parseInt(raw[1].replace(/\D/g, ""), 10) || 0;
+    }
+    if (weight > 0) {
+      summaryEl.textContent = `合计 ${score} / ${weight}（${Math.round((score / weight) * 100)}%）`;
+    }
+  }
+
+  function finish(failed) {
+    if (finished) return;
+    finished = true;
+    if (source) {
+      source.close();
+      source = null;
+    }
+    startBtn.disabled = false;
+    dot.classList.remove("live");
+    dot.classList.add(failed ? "fail" : "done");
+    if (!failed) phaseEl.textContent = PHASE_LABEL.initial_done;
+    updateSummary();
+  }
+
+  function handle(ev) {
+    const { type, payload = {} } = ev;
+    switch (type) {
+      case "session.created":
+        log(`会话 ${payload.session_id} 已创建`, "gold");
+        break;
+      case "phase.changed":
+        setPhase(payload.phase);
+        log(`阶段 → ${PHASE_LABEL[payload.phase] || payload.phase}`);
+        if (payload.phase === "initial_done") finish(false);
+        break;
+      case "loading.progress":
+        log(payload.msg || "");
+        break;
+      case "loading.done":
+        log(`仓库读取完成：${payload.files_read} 个文件 / ${payload.chars} 字符`, "green");
+        break;
+      case "judge.thinking":
+        log(`评委 ${payload.judge_id} 正在阅读证据包…`);
+        break;
+      case "judge.initial":
+        log(`评委「${payload.name || payload.judge_id}」给出 ${payload.score} 分 · ${payload.verdict}`, payload.degraded ? "red" : "green");
+        renderVerdict(payload);
+        updateSummary();
+        break;
+      case "error":
+        log(`[${payload.stage}] ${payload.msg}`, "red");
+        if (!payload.degraded) finish(true);
+        break;
+      default:
+        log(`${type} ${JSON.stringify(payload)}`);
+    }
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const repo = repoInput.value.trim();
+    if (!repo) return;
+
+    startBtn.disabled = true;
+    finished = false;
+    cards.clear();
+    judgesEl.replaceChildren();
+    logEl.replaceChildren();
+    statusBar.classList.remove("hidden");
+    summaryEl.textContent = "";
+    dot.className = "dot live";
+    phaseEl.textContent = "正在创建会话…";
+
+    try {
+      const resp = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repo_url: repo,
+          prd: $("#prd").value.trim() || null,
+          demo_url: $("#demo").value.trim() || null,
+        }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || "创建会话失败");
+
+      currentSession = data.session_id;
+      if (source) source.close();
+      source = new EventSource(`/api/sessions/${currentSession}/events`);
+      source.onmessage = (msg) => {
+        try {
+          handle(JSON.parse(msg.data));
+        } catch (err) {
+          console.error(err, msg.data);
+        }
+      };
+      source.onerror = () => {
+        if (!finished) log("SSE 连接中断，浏览器会自动重连…", "red");
+      };
+    } catch (err) {
+      startBtn.disabled = false;
+      log(String(err.message || err), "red");
+      finish(true);
+    }
+  });
+})();
+</script>
+</body>
+</html>

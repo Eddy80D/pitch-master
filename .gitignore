@@ -1,0 +1,12 @@
+.env
+logs/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+
+# D2 运行时产物
+reports/
+t7_screenshot.png
+front.tmp.js

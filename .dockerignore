@@ -1,0 +1,12 @@
+.env
+logs/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.git/
+t7_screenshot.png
+
+reports/
+t7_screenshot.png
+front.tmp.js
