@@ -1,7 +1,11 @@
-"""7 阶段状态机 + 内存会话存储 + JSON 落盘备份 + 事件订阅。
+"""D2 十阶段状态机 + 内存会话存储 + JSON 落盘备份 + 事件订阅。
 
-阶段顺序（今晚只走到 judging 完成）：
-created → loading → analyzing → judging → rebuttal → review → report
+阶段顺序：
+created → loading → analyzing → judging → intro → qa
+        → deliberation → reveal → report → done
+
+按 Kimi Q2 裁决：等待点使用**一次性 Future**，不复用 Event。
+按 Q3 裁决：所有状态转换由同一把 asyncio.Lock 保护，迟到输入返回 False（路由层转 409）。
 """
 
 from __future__ import annotations
@@ -13,9 +17,23 @@ import uuid
 from typing import Any, AsyncIterator
 
 from . import config, events
-from .schemas import EvidencePack, JudgeVerdict, SessionState
+from .schemas import EvidencePack, FinalVerdict, JudgeVerdict, SessionState
 
-PHASES = ["created", "loading", "analyzing", "judging", "rebuttal", "review", "report"]
+PHASES = [
+    "created",
+    "loading",
+    "analyzing",
+    "judging",
+    "intro",
+    "qa",
+    "deliberation",
+    "reveal",
+    "report",
+    "done",
+]
+
+# 内部哨兵：用户点击"直接宣判"
+SKIP = object()
 
 
 class Session:
@@ -27,12 +45,27 @@ class Session:
         self.phase = "created"
         self.events: list[dict[str, Any]] = []
         self.evidence: EvidencePack | None = None
+
+        # D1：初评
         self.verdicts: list[JudgeVerdict] = []
+        # D2：初评基线 / 终评 / 答辩记录 / 互怼 / 报告
+        self.verdict_initial: list[JudgeVerdict] = []
+        self.verdict_final: list[FinalVerdict] = []
+        self.transcript: list[dict[str, Any]] = []
+        self.intro_text: str | None = None
+        self.bicker: list[dict[str, Any]] = []
+        self.report_text: str | None = None
+        self.report_ready = False
+
         self.error: dict[str, Any] | None = None
         self.created_at = time.time()
         self.closed = False
+
+        # 等待点：{"kind": "intro"|"answer", "index": int, "future": Future}
+        self.pending: dict[str, Any] | None = None
+        self.skip_requested = False
+        self.state_lock = asyncio.Lock()
         self.condition = asyncio.Condition()
-        self._persisted_events = 0
 
     # ------------------------------------------------------------ 事件
     async def emit(self, type_: str, **payload: Any) -> None:
@@ -44,8 +77,7 @@ class Session:
 
     async def set_phase(self, phase: str) -> None:
         if phase not in PHASES:
-            # 允许今晚的临时终态（如 initial_done），不阻止流程
-            pass
+            raise ValueError(f"非法阶段：{phase}")
         self.phase = phase
         await self.emit(events.PHASE_CHANGED, phase=phase)
 
@@ -55,6 +87,82 @@ class Session:
             self.condition.notify_all()
         self._persist()
 
+    # ------------------------------------------------------------ 用户输入
+    def add_transcript(
+        self,
+        role: str,
+        text: str,
+        *,
+        judge_id: str | None = None,
+        judge_name: str | None = None,
+        index: int | None = None,
+    ) -> None:
+        self.transcript.append(
+            {
+                "role": role,
+                "text": text,
+                "judge_id": judge_id,
+                "judge_name": judge_name,
+                "index": index,
+            }
+        )
+
+    async def wait_input(
+        self, kind: str, index: int, timeout_s: float
+    ) -> tuple[str, str | None]:
+        """等待一次用户输入。
+
+        返回 (status, text)：status ∈ {"ok", "timeout", "skip"}。
+        超时后不再接受该次输入（pending 会被清空）。
+        """
+        loop = asyncio.get_running_loop()
+        future: asyncio.Future[Any] = loop.create_future()
+
+        async with self.state_lock:
+            self.pending = {"kind": kind, "index": index, "future": future}
+
+        try:
+            value = await asyncio.wait_for(asyncio.shield(future), timeout=timeout_s)
+            if value is SKIP:
+                return ("skip", None)
+            return ("ok", str(value))
+        except asyncio.TimeoutError:
+            # 超时与提交同时发生的极小窗口：提交赢了就把值收下
+            if future.done() and not future.cancelled():
+                value = future.result()
+                if value is SKIP:
+                    return ("skip", None)
+                return ("ok", str(value))
+            return ("timeout", None)
+        finally:
+            async with self.state_lock:
+                if self.pending is not None and self.pending.get("future") is future:
+                    self.pending = None
+
+    async def submit_input(self, kind: str, index: int, text: str) -> bool:
+        """提交输入；kind/index 不匹配或已结束则返回 False。"""
+        async with self.state_lock:
+            pending = self.pending
+            if not pending or pending["kind"] != kind or pending["index"] != index:
+                return False
+            future = pending["future"]
+            if future.done():
+                return False
+            future.set_result(text)
+            return True
+
+    async def request_skip(self) -> bool:
+        """跳过剩余答辩直达合议；仅 intro / qa 阶段有效（Q7）。"""
+        async with self.state_lock:
+            if self.phase not in ("intro", "qa"):
+                return False
+            self.skip_requested = True
+            pending = self.pending
+            if pending and not pending["future"].done():
+                pending["future"].set_result(SKIP)
+            return True
+
+    # ------------------------------------------------------------ 订阅
     async def subscribe(self, start: int = 0) -> AsyncIterator[dict[str, Any] | None]:
         """从 start 位置重放，然后持续推送。yield None 表示心跳。"""
         idx = max(0, start)
@@ -88,6 +196,12 @@ class Session:
             phase=self.phase,
             evidence=self.evidence,
             verdicts=self.verdicts,
+            verdict_initial=self.verdict_initial,
+            verdict_final=self.verdict_final,
+            transcript=self.transcript,
+            intro_text=self.intro_text,
+            bicker=self.bicker,
+            report_ready=self.report_ready,
             error=self.error,
             created_at=self.created_at,
         )

@@ -1,6 +1,6 @@
 # 路演大师 PitchMaster
 
-JUNCTION CHINA 2026 · MiMo 赛道。输入 GitHub 仓库 → 解剖员产出证据包 → 5 位 AI 评委并行初评，SSE 实时推送到网页。
+JUNCTION CHINA 2026 · MiMo 赛道。输入 GitHub 仓库 → 解剖员产出证据包 → 5 位 AI 评委初评 → 自我介绍 → 答辩 → 复议 → 互怼 → 亮椅 → Markdown 报告，SSE 实时推送到网页。
 
 ## 本地运行
 
@@ -12,12 +12,26 @@ python -m uvicorn app.main:app --reload --port 8000
 
 打开 http://127.0.0.1:8000 ，填一个 GitHub 仓库地址，点「开始评审」。
 
+演示模式默认 4 问 / 每问 45 秒 / 介绍 30 秒；完整模式改 `.env` 里的三个值（10 / 120 / 180）。
+
+### 闭环接口
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/sessions` | 创建会话 |
+| GET | `/api/sessions/{id}/events` | SSE 事件流（支持 Last-Event-ID 续传） |
+| POST | `/api/sessions/{id}/intro` | 提交自我介绍（≤500 字） |
+| POST | `/api/sessions/{id}/answer` | 提交当前问题回答（≤2000 字） |
+| POST | `/api/sessions/{id}/skip` | 跳过答辩直达合议（仅 intro/qa） |
+| GET | `/api/sessions/{id}/report` | 下载 Markdown 报告（202=生成中，404=未生成） |
+
 ## 自测
 
 ```bash
 python scripts/smoke.py                      # T1：pro 非流式 + flash 流式 + usage 记账
-python scripts/test_state_machine.py         # T2：事件序列
-python scripts/test_e2e.py                   # T7：浏览器端到端（需本机 Chrome + playwright）
+python scripts/test_state_machine.py         # T2/T9：等待点、超时、skip、事件序列
+python scripts/test_full_loop.py             # T16：mock 全流程（不调 API）
+python scripts/test_e2e.py                   # T16：浏览器端到端（需 Chrome + playwright，会调真实 API）
 ```
 
 ## 目录
@@ -32,10 +46,12 @@ app/
   schemas.py         证据包 / 评委结论 / JSON 解析
   repo_loader.py     仓库抓取 / 过滤 / 截断
   agents/analyst.py  解剖员（pro）
-  agents/judges.py   5 评委并行初评（flash）
+  agents/judges.py   初评 / 短评 / 复议 / 互怼 / 安可
+  agents/report.py   报告生成 + 模板降级
 judges.yaml          评委人设（改这里不用改代码）
-static/index.html    文字渲染器 v0
+static/index.html    文字渲染器 v0（含自我介绍 / 答辩 / 下载）
 logs/usage.jsonl     token 记账（gitignore）
+reports/{id}.md      生成的报告（gitignore）
 ```
 
 ## 部署（Sealos）

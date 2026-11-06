@@ -122,6 +122,41 @@ class JudgeVerdict(BaseModel):
         return "turn" if str(value).strip().lower() in {"turn", "yes", "accept"} else "hold"
 
 
+class FinalVerdict(BaseModel):
+    """复议后的终评结论。"""
+
+    judge_id: str
+    name: str = ""
+    dimension: str = ""
+    weight: int = 0
+    initial_score: int = 0
+    final_score: int = 0
+    direction: str = "hold"
+    reason: str = ""
+    final_verdict: str = "hold"
+    encore: bool = False
+    degraded: bool = False
+
+    @field_validator("initial_score", "final_score", mode="before")
+    @classmethod
+    def _to_int(cls, value: Any) -> Any:
+        try:
+            return int(float(value))
+        except (TypeError, ValueError):
+            return 0
+
+    @field_validator("direction", mode="before")
+    @classmethod
+    def _normalize_direction(cls, value: Any) -> str:
+        value = str(value).strip().lower()
+        return value if value in {"up", "down", "hold"} else "hold"
+
+    @field_validator("final_verdict", mode="before")
+    @classmethod
+    def _normalize_final_verdict(cls, value: Any) -> str:
+        return "turn" if str(value).strip().lower() in {"turn", "yes", "accept"} else "hold"
+
+
 # ---------------------------------------------------------------- 会话状态
 class SessionState(BaseModel):
     id: str
@@ -131,11 +166,63 @@ class SessionState(BaseModel):
     phase: str = "created"
     evidence: EvidencePack | None = None
     verdicts: list[JudgeVerdict] = Field(default_factory=list)
+    verdict_initial: list[JudgeVerdict] = Field(default_factory=list)
+    verdict_final: list[FinalVerdict] = Field(default_factory=list)
+    transcript: list[dict[str, Any]] = Field(default_factory=list)
+    intro_text: str | None = None
+    bicker: list[dict[str, Any]] = Field(default_factory=list)
+    report_ready: bool = False
     error: dict[str, Any] | None = None
     created_at: float = 0.0
 
 
 # ---------------------------------------------------------------- 工具函数
+def transcript_to_text(transcript: list[dict[str, Any]]) -> str:
+    """把结构化 transcript 转成评委可读的文本。"""
+    lines: list[str] = []
+    for item in transcript:
+        role = item.get("role")
+        text = str(item.get("text") or "")
+        if role == "user_intro":
+            lines.append(f"[自我介绍] {text}")
+        elif role == "judge_q":
+            lines.append(f"[第{item.get('index', '?')}问 · {item.get('judge_name', '评委')}] {text}")
+        elif role == "user_a":
+            lines.append(f"[回答] {text}")
+        elif role == "judge_reaction":
+            lines.append(f"[{item.get('judge_name', '评委')}反应] {text}")
+    return "\n".join(lines) if lines else "（无答辩记录）"
+
+
+def score_totals(
+    initial: list[JudgeVerdict],
+    final: list[FinalVerdict],
+) -> dict[str, Any]:
+    """总分口径（Q5）：Σfinal / Σ(有效维度 weight) × 100，缺席维度排除分母。"""
+    initial_map = {item.judge_id: item for item in initial}
+    valid = [item for item in final if item.weight > 0 and not item.degraded]
+    valid_weight = sum(item.weight for item in valid)
+    final_sum = sum(item.final_score for item in valid)
+    def _initial_score(item: FinalVerdict) -> int:
+        original = initial_map.get(item.judge_id)
+        return original.score if original is not None else item.initial_score
+
+    initial_sum = sum(_initial_score(item) for item in valid)
+
+    def _pct(value: int) -> float:
+        return round(value / valid_weight * 100, 1) if valid_weight else 0.0
+
+    final_pct = _pct(final_sum)
+    initial_pct = _pct(initial_sum)
+    return {
+        "initial": initial_pct,
+        "final": final_pct,
+        "delta": round(final_pct - initial_pct, 1),
+        "valid_weight": valid_weight,
+        "missing": [item.name for item in final if item.weight > 0 and item.degraded],
+    }
+
+
 _FENCE_RE = re.compile(r"^\s*```(?:json|JSON)?\s*|\s*```\s*$")
 
 

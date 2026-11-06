@@ -33,17 +33,16 @@
   h1 span { color: var(--gold); }
   .sub { color: var(--muted); font-size: 14px; line-height: 1.7; margin: 0; }
 
-  form {
+  form, .card {
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 16px;
     padding: 20px;
-    display: grid;
-    gap: 12px;
   }
+  form { display: grid; gap: 12px; }
   .row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
   label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-  input {
+  input, textarea {
     width: 100%;
     background: var(--bg);
     border: 1px solid var(--line);
@@ -51,27 +50,37 @@
     color: var(--text);
     padding: 12px 14px;
     font-size: 14px;
+    font-family: inherit;
     outline: none;
     transition: border-color .15s;
+    resize: vertical;
   }
-  input:focus { border-color: var(--gold); }
-  input::placeholder { color: #55555f; }
+  textarea { min-height: 84px; line-height: 1.6; }
+  input:focus, textarea:focus { border-color: var(--gold); }
+  input::placeholder, textarea::placeholder { color: #55555f; }
   button {
-    justify-self: start;
-    margin-top: 4px;
     background: var(--gold);
     color: #17140b;
     border: 0;
     border-radius: 10px;
-    padding: 12px 26px;
-    font-size: 15px;
+    padding: 11px 22px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     transition: filter .15s, opacity .15s;
   }
   button:hover { filter: brightness(1.08); }
   button:disabled { opacity: .45; cursor: not-allowed; }
+  button.ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    font-weight: 500;
+  }
+  button.ghost:hover { color: var(--text); border-color: var(--muted); }
+  .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
   .hint { color: var(--muted); font-size: 12px; }
+  #form-submit { justify-self: start; margin-top: 4px; }
 
   #status { display: flex; align-items: center; gap: 10px; margin: 28px 0 16px; font-size: 14px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
@@ -80,6 +89,22 @@
   .dot.fail { background: var(--red); }
   @keyframes pulse { 50% { opacity: .35; } }
   #summary { margin-left: auto; color: var(--gold); font-size: 13px; font-family: var(--mono); }
+
+  #interaction { display: grid; gap: 14px; margin-bottom: 18px; }
+  .card h2 { margin: 0 0 6px; font-size: 17px; }
+  .card p { margin: 0 0 8px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+  .card .q-label { color: var(--gold); font-size: 12px; letter-spacing: 1px; margin-bottom: 6px; }
+  .card .q-text { color: var(--text); font-size: 16px; line-height: 1.6; margin: 0 0 12px; }
+  .report-link {
+    display: inline-block;
+    color: #17140b;
+    background: var(--gold);
+    text-decoration: none;
+    border-radius: 10px;
+    padding: 11px 22px;
+    font-weight: 700;
+    font-size: 14px;
+  }
 
   #judges { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
   .judge {
@@ -104,6 +129,7 @@
   .judge-rationale { color: #c9c9d2; font-size: 13px; line-height: 1.65; margin: 0 0 8px; }
   .judge-q { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 0; padding-left: 16px; }
   .judge-q li { margin-bottom: 3px; }
+  .judge-final { margin-top: 8px; font-size: 12px; color: var(--gold); font-family: var(--mono); }
 
   #log {
     margin-top: 28px;
@@ -115,13 +141,14 @@
     font-size: 12px;
     line-height: 1.9;
     color: var(--muted);
-    max-height: 320px;
+    max-height: 360px;
     overflow-y: auto;
   }
   #log .t { color: #55555f; margin-right: 10px; }
   #log .gold { color: var(--gold); }
   #log .green { color: var(--green); }
   #log .red { color: var(--red); }
+  #log .hot { color: #ff9d5c; }
   .hidden { display: none !important; }
   @media (max-width: 640px) {
     main { padding-top: 36px; }
@@ -135,7 +162,7 @@
   <header>
     <div class="eyebrow">JUNCTION CHINA 2026 · MiMo Track</div>
     <h1>路演<span>大师</span> PitchMaster</h1>
-    <p class="sub">投一个仓库，让五位 AI 评委先替你挑刺。<br>初评阶段：解剖员阅读代码 → 评委并行亮分。</p>
+    <p class="sub">投一个仓库，让五位 AI 评委先替你挑刺。<br>初评 → 自我介绍 → 答辩 → 复议 → 亮椅 → 报告。</p>
   </header>
 
   <form id="form">
@@ -145,22 +172,52 @@
     </div>
     <div class="row">
       <div>
-        <label for="prd">PRD 链接或摘要（选填，今晚不参与评分）</label>
+        <label for="prd">PRD 链接或摘要（选填，暂不参与评分）</label>
         <input id="prd" name="prd" placeholder="https://... 或一两句话" autocomplete="off">
       </div>
       <div>
-        <label for="demo">成品网址（选填，今晚不参与评分）</label>
+        <label for="demo">成品网址（选填，暂不参与评分）</label>
         <input id="demo" name="demo" placeholder="https://..." autocomplete="off">
       </div>
     </div>
-    <button id="start" type="submit">开始评审</button>
-    <div class="hint">提示：仓库会以浅克隆方式读取，只读不写。</div>
+    <button id="form-submit" type="submit">开始评审</button>
+    <div class="hint">仓库以浅克隆方式读取，只读不写。演示模式默认 4 问、每问 45 秒。</div>
   </form>
 
   <section id="status" class="hidden">
     <span id="dot" class="dot live"></span>
     <span id="phase">准备中</span>
     <span id="summary"></span>
+  </section>
+
+  <section id="interaction">
+    <div id="intro-box" class="card hidden">
+      <h2>先介绍一下你的项目</h2>
+      <p>30 秒：做什么、给谁、现在做到什么程度。不写也能过，但评委只能按代码判断。</p>
+      <textarea id="intro-text" maxlength="500" placeholder="例：我们做了一个面向大学生的 AI 简历优化工具，已上线 3 个模板，日均 200 次调用……"></textarea>
+      <div class="actions">
+        <button id="intro-submit" type="button">提交介绍</button>
+        <button id="intro-skip" class="ghost" type="button">直接宣判</button>
+        <span id="intro-hint" class="hint"></span>
+      </div>
+    </div>
+
+    <div id="answer-box" class="card hidden">
+      <div class="q-label">评委追问 <span id="q-index"></span></div>
+      <p id="q-text" class="q-text"></p>
+      <textarea id="answer-text" maxlength="2000" placeholder="直接回答，别背稿；说不清就承认，评委更看重边界感……"></textarea>
+      <div class="actions">
+        <button id="answer-submit" type="button">提交回答</button>
+        <button id="answer-skip" class="ghost" type="button">直接宣判</button>
+        <span id="answer-hint" class="hint"></span>
+      </div>
+    </div>
+
+    <div id="report-box" class="card hidden">
+      <h2>预评审报告已生成</h2>
+      <p>包含总分、临场力、各维度评语、答辩实录、证据附录与 90 秒演讲稿。</p>
+      <a id="report-link" class="report-link" href="#" download>下载 Markdown 报告</a>
+    </div>
   </section>
 
   <section id="judges"></section>
@@ -174,15 +231,17 @@
     loading: "读取仓库",
     analyzing: "解剖代码",
     judging: "评委初评",
-    initial_done: "初评完成",
-    rebuttal: "答辩",
-    review: "复议",
-    report: "报告",
+    intro: "自我介绍",
+    qa: "答辩中",
+    deliberation: "评委合议",
+    reveal: "亮椅",
+    report: "生成报告",
+    done: "评审完成",
   };
 
   const $ = (sel) => document.querySelector(sel);
   const form = $("#form");
-  const startBtn = $("#start");
+  const startBtn = $("#form-submit");
   const repoInput = $("#repo");
   const statusBar = $("#status");
   const dot = $("#dot");
@@ -190,16 +249,17 @@
   const summaryEl = $("#summary");
   const judgesEl = $("#judges");
   const logEl = $("#log");
+  const introBox = $("#intro-box");
+  const answerBox = $("#answer-box");
+  const reportBox = $("#report-box");
 
   let source = null;
-  let currentSession = null;
+  let sessionId = null;
+  let lastEventId = -1;
   let finished = false;
   const cards = new Map();
 
-  function now() {
-    const d = new Date();
-    return d.toTimeString().slice(0, 8);
-  }
+  const now = () => new Date().toTimeString().slice(0, 8);
 
   function log(text, cls = "") {
     logEl.classList.remove("hidden");
@@ -218,7 +278,7 @@
   function setPhase(phase) {
     phaseEl.textContent = PHASE_LABEL[phase] || phase;
     if (finished) return;
-    dot.classList.toggle("live", phase !== "initial_done");
+    dot.classList.toggle("live", phase !== "done");
   }
 
   function el(tag, cls, text) {
@@ -226,6 +286,35 @@
     if (cls) node.className = cls;
     if (text !== undefined) node.textContent = text;
     return node;
+  }
+
+  function show(node) {
+    node.classList.remove("hidden");
+  }
+
+  function hide(node) {
+    node.classList.add("hidden");
+  }
+
+  function resetInputs() {
+    $("#intro-submit").disabled = false;
+    $("#intro-skip").disabled = false;
+    $("#intro-hint").textContent = "";
+    $("#answer-submit").disabled = false;
+    $("#answer-skip").disabled = false;
+    $("#answer-hint").textContent = "";
+  }
+
+  async function post(path, body) {
+    const resp = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {}),
+    });
+    let data = {};
+    try { data = await resp.json(); } catch (err) { /* ignore */ }
+    if (!resp.ok) throw new Error(data.detail || `请求失败（${resp.status}）`);
+    return data;
   }
 
   function renderVerdict(p) {
@@ -271,17 +360,32 @@
     }
   }
 
+  function updateFinal(p) {
+    let card = cards.get(p.judge_id);
+    if (!card) return;
+    let line = card.querySelector(".judge-final");
+    if (!line) {
+      line = el("div", "judge-final");
+      card.appendChild(line);
+    }
+    if (p.turned === null) {
+      line.textContent = "终评：缺席（缺评）";
+      card.classList.add("degraded");
+      return;
+    }
+    line.textContent = `终评：${p.final_score ?? 0} / ${p.weight ?? 0} · ${p.turned ? "转身" : "留座"}`;
+  }
+
   function updateSummary() {
     let score = 0;
     let weight = 0;
     for (const card of judgesEl.children) {
-      const id = card.dataset.id;
       const raw = card.querySelector(".judge-score").textContent.split("/");
       score += parseInt(raw[0], 10) || 0;
       if (raw[1]) weight += parseInt(raw[1].replace(/\D/g, ""), 10) || 0;
     }
     if (weight > 0) {
-      summaryEl.textContent = `合计 ${score} / ${weight}（${Math.round((score / weight) * 100)}%）`;
+      summaryEl.textContent = `初评 ${score} / ${weight}（${Math.round((score / weight) * 100)}%）`;
     }
   }
 
@@ -293,9 +397,11 @@
       source = null;
     }
     startBtn.disabled = false;
+    hide(introBox);
+    hide(answerBox);
     dot.classList.remove("live");
     dot.classList.add(failed ? "fail" : "done");
-    if (!failed) phaseEl.textContent = PHASE_LABEL.initial_done;
+    if (!failed) phaseEl.textContent = PHASE_LABEL.done;
     updateSummary();
   }
 
@@ -308,7 +414,11 @@
       case "phase.changed":
         setPhase(payload.phase);
         log(`阶段 → ${PHASE_LABEL[payload.phase] || payload.phase}`);
-        if (payload.phase === "initial_done") finish(false);
+        if (["deliberation", "reveal", "report", "done"].includes(payload.phase)) {
+          hide(introBox);
+          hide(answerBox);
+        }
+        if (payload.phase === "done") finish(false);
         break;
       case "loading.progress":
         log(payload.msg || "");
@@ -323,6 +433,63 @@
         log(`评委「${payload.name || payload.judge_id}」给出 ${payload.score} 分 · ${payload.verdict}`, payload.degraded ? "red" : "green");
         renderVerdict(payload);
         updateSummary();
+        break;
+      case "intro.requested":
+        log("请做自我介绍（30 秒内）", "gold");
+        resetInputs();
+        $("#intro-text").value = "";
+        show(introBox);
+        $("#intro-text").focus();
+        break;
+      case "intro.done":
+        hide(introBox);
+        log(`自我介绍已记录：${(payload.text || "").slice(0, 40)}`);
+        break;
+      case "qa.start":
+        log(`答辩开始，共 ${payload.total} 问`, "gold");
+        hide(introBox);
+        break;
+      case "qa.question":
+        log(`第 ${payload.index} 问 · ${payload.name}：${payload.text}`, "gold");
+        resetInputs();
+        $("#q-index").textContent = `#${payload.index}`;
+        $("#q-text").textContent = payload.text || "";
+        $("#answer-text").value = "";
+        show(answerBox);
+        $("#answer-text").focus();
+        break;
+      case "qa.answer":
+        hide(answerBox);
+        log(`回答已记录`, "green");
+        break;
+      case "qa.reaction":
+        log(`「${payload.name}」：${payload.text}`);
+        break;
+      case "qa.end":
+        hide(answerBox);
+        log("答辩结束");
+        break;
+      case "deliberation.start":
+        log("评委开始合议…", "gold");
+        break;
+      case "encore":
+        log(`🎤 安可：${payload.name} 返场`, "gold");
+        break;
+      case "bicker.line":
+        log(`🔥 ${payload.name}：${payload.text}`, "hot");
+        break;
+      case "reveal.chair":
+        if (payload.turned === null) {
+          log(`🪑 ${payload.name}：缺席（缺评）`, "red");
+        } else {
+          log(`🪑 ${payload.name}：${payload.turned ? "✅ 转身" : "❌ 留座"} ${payload.final_score ?? 0}/${payload.weight}`, payload.turned ? "green" : "red");
+        }
+        updateFinal(payload);
+        break;
+      case "report.ready":
+        log(`报告已生成（${payload.chars} 字）`, "green");
+        $("#report-link").href = `/api/sessions/${sessionId}/report`;
+        show(reportBox);
         break;
       case "error":
         log(`[${payload.stage}] ${payload.msg}`, "red");
@@ -340,31 +507,33 @@
 
     startBtn.disabled = true;
     finished = false;
+    lastEventId = -1;
     cards.clear();
     judgesEl.replaceChildren();
     logEl.replaceChildren();
+    hide(reportBox);
+    hide(introBox);
+    hide(answerBox);
     statusBar.classList.remove("hidden");
     summaryEl.textContent = "";
     dot.className = "dot live";
     phaseEl.textContent = "正在创建会话…";
 
     try {
-      const resp = await fetch("/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          repo_url: repo,
-          prd: $("#prd").value.trim() || null,
-          demo_url: $("#demo").value.trim() || null,
-        }),
+      const data = await post("/api/sessions", {
+        repo_url: repo,
+        prd: $("#prd").value.trim() || null,
+        demo_url: $("#demo").value.trim() || null,
       });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.detail || "创建会话失败");
-
-      currentSession = data.session_id;
+      sessionId = data.session_id;
       if (source) source.close();
-      source = new EventSource(`/api/sessions/${currentSession}/events`);
+      source = new EventSource(`/api/sessions/${sessionId}/events`);
       source.onmessage = (msg) => {
+        const id = Number(msg.lastEventId);
+        if (Number.isFinite(id)) {
+          if (id <= lastEventId) return;
+          lastEventId = id;
+        }
         try {
           handle(JSON.parse(msg.data));
         } catch (err) {
@@ -380,6 +549,42 @@
       finish(true);
     }
   });
+
+  async function submitOnce(button, hint, path, body, doneText) {
+    button.disabled = true;
+    hint.textContent = "已提交，等待评委…";
+    try {
+      await post(path, body);
+      hint.textContent = doneText;
+    } catch (err) {
+      button.disabled = false;
+      hint.textContent = String(err.message || err);
+    }
+  }
+
+  $("#intro-submit").addEventListener("click", () => {
+    const text = $("#intro-text").value.trim();
+    submitOnce($("#intro-submit"), $("#intro-hint"), `/api/sessions/${sessionId}/intro`, { text }, "已记录");
+  });
+
+  $("#answer-submit").addEventListener("click", () => {
+    const text = $("#answer-text").value.trim();
+    submitOnce($("#answer-submit"), $("#answer-hint"), `/api/sessions/${sessionId}/answer`, { text }, "已记录");
+  });
+
+  async function skip() {
+    try {
+      await post(`/api/sessions/${sessionId}/skip`, {});
+      hide(introBox);
+      hide(answerBox);
+      log("已选择直接宣判", "gold");
+    } catch (err) {
+      log(String(err.message || err), "red");
+    }
+  }
+
+  $("#intro-skip").addEventListener("click", skip);
+  $("#answer-skip").addEventListener("click", skip);
 })();
 </script>
 </body>

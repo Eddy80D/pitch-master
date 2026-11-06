@@ -74,7 +74,12 @@ async def chat(
     for attempt in range(2):
         try:
             async with httpx.AsyncClient(timeout=timeout or config.MIMO_TIMEOUT) as client:
-                resp = await client.post(_url(), headers=_headers(), json=payload)
+                # httpx 的 timeout 是单次读写超时；这里再加一道"整通调用"硬上限，
+                # 防止模型慢慢吐字把整场评审拖住（实测出现过单次 7 分钟）。
+                resp = await asyncio.wait_for(
+                    client.post(_url(), headers=_headers(), json=payload),
+                    timeout=timeout or config.MIMO_TIMEOUT,
+                )
                 if resp.status_code >= 500:
                     raise httpx.HTTPStatusError(
                         f"server error {resp.status_code}", request=resp.request, response=resp

@@ -16,6 +16,20 @@ JUDGE_INITIAL = "judge.initial"
 PHASE_CHANGED = "phase.changed"
 ERROR = "error"
 
+# —— D2 闭环 ——
+INTRO_REQUESTED = "intro.requested"
+INTRO_DONE = "intro.done"
+QA_START = "qa.start"
+QA_QUESTION = "qa.question"
+QA_ANSWER = "qa.answer"
+QA_REACTION = "qa.reaction"
+QA_END = "qa.end"
+DELIBERATION_START = "deliberation.start"
+ENCORE = "encore"
+BICKER_LINE = "bicker.line"
+REVEAL_CHAIR = "reveal.chair"
+REPORT_READY = "report.ready"
+
 ALL_TYPES = (
     SESSION_CREATED,
     LOADING_PROGRESS,
@@ -24,6 +38,18 @@ ALL_TYPES = (
     JUDGE_INITIAL,
     PHASE_CHANGED,
     ERROR,
+    INTRO_REQUESTED,
+    INTRO_DONE,
+    QA_START,
+    QA_QUESTION,
+    QA_ANSWER,
+    QA_REACTION,
+    QA_END,
+    DELIBERATION_START,
+    ENCORE,
+    BICKER_LINE,
+    REVEAL_CHAIR,
+    REPORT_READY,
 )
 
 

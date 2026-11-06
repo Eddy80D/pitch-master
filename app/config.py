@@ -23,9 +23,23 @@ MODEL_PRO: str = os.getenv("MODEL_PRO", "mimo-v2.6-pro")
 MODEL_FLASH: str = os.getenv("MODEL_FLASH", "mimo-v2.6-flash")
 MIMO_TIMEOUT: float = float(os.getenv("MIMO_TIMEOUT", "180"))
 
+# —— D2 答辩 / 报告 ——
+# 演示模式为现场默认（Q6 裁决）；完整模式把三个值改成 10 / 120 / 180 即可
+QA_MAX_QUESTIONS: int = int(os.getenv("QA_MAX_QUESTIONS", "4"))
+QA_ANSWER_TIMEOUT_S: float = float(os.getenv("QA_ANSWER_TIMEOUT_S", "45"))
+INTRO_TIMEOUT_S: float = float(os.getenv("INTRO_TIMEOUT_S", "30"))
+# TODO(窦柘): 插话权只预留开关，v1 未接入答辩流程（D2 规格允许默认关闭）
+INTERJECTION_ENABLED: bool = os.getenv("INTERJECTION_ENABLED", "False").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+REPORT_MODEL: str = os.getenv("REPORT_MODEL", MODEL_PRO)
+
 LOG_DIR: Path = _path_env("LOG_DIR", ROOT / "logs")
 USAGE_FILE: Path = LOG_DIR / "usage.jsonl"
 SESSIONS_DIR: Path = LOG_DIR / "sessions"
+REPORTS_DIR: Path = _path_env("REPORTS_DIR", ROOT / "reports")
 
 JUDGES_FILE: Path = ROOT / "judges.yaml"
 
@@ -37,6 +51,7 @@ MAX_TOTAL_CHARS: int = 300_000
 def ensure_dirs() -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def validate() -> None:

@@ -110,7 +110,7 @@ def _clone(repo_url: str, dest: Path) -> bool:
         proc = subprocess.run(
             ["git", "clone", "--depth", "1", "--single-branch", repo_url, str(dest)],
             capture_output=True,
-            timeout=180,
+            timeout=90,
         )
         return proc.returncode == 0 and dest.exists()
     except (OSError, subprocess.SubprocessError):
@@ -119,8 +119,13 @@ def _clone(repo_url: str, dest: Path) -> bool:
 
 def _download_zip(repo_url: str, dest: Path) -> None:
     owner, repo = _github_parts(repo_url)
-    archive_url = f"https://github.com/{owner}/{repo}/archive/HEAD.zip"
-    with httpx.Client(follow_redirects=True, timeout=120) as client:
+    # 直连 codeload，避开 github.com 首页/重定向在弱网下超时的问题
+    archive_url = f"https://codeload.github.com/{owner}/{repo}/zip/HEAD"
+    # 连接阶段快速失败，避免场馆网络不好时让用户干等两分钟
+    with httpx.Client(
+        follow_redirects=True,
+        timeout=httpx.Timeout(120.0, connect=15.0),
+    ) as client:
         with client.stream("GET", archive_url) as resp:
             resp.raise_for_status()
             with open(dest, "wb") as fh:
@@ -298,7 +303,17 @@ def _collect(root: Path, repo_url: str) -> dict:
 
 def load_repository(repo_url: str) -> dict:
     """同步入口（调用方用 asyncio.to_thread 包一层）。"""
-    root, work = _fetch_repo(repo_url)
+    try:
+        root, work = _fetch_repo(repo_url)
+    except (httpx.ConnectTimeout, httpx.ConnectError) as exc:
+        raise RuntimeError(
+            "无法连接 GitHub（网络超时）。请检查网络后重试；本次未消耗模型额度。"
+        ) from exc
+    except httpx.HTTPStatusError as exc:
+        raise RuntimeError(
+            f"仓库下载失败（HTTP {exc.response.status_code}）。请确认仓库存在且为公开仓库。"
+        ) from exc
+
     try:
         result = _collect(root, repo_url)
         result["repo_url"] = repo_url
