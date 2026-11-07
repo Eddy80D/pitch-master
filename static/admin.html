@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="data:,">
+<link rel="icon" type="image/png" href="/static/brand/mascot-64.png">
 <title>老板后台 · PitchMaster</title>
 <style>  :root {
     --bg: #F5F4F1;
@@ -27,6 +27,8 @@
   main { max-width:1060px; margin:0 auto; padding:40px 20px 80px; }
   h1 { font-size:24px; margin:0 0 6px; color:var(--ink); }
   h1 span { color:var(--blue); }
+  .admin-brand { display:flex; align-items:center; min-height:32px; }
+  .admin-brand img { height:30px; width:auto; display:block; }
   .sub { color:var(--ink-2); font-size:13px; margin:0 0 22px; }
 
   .section { margin-bottom:22px; }
@@ -125,7 +127,11 @@
 </head>
 <body>
 <main>
-  <h1>老板<span>后台</span></h1>
+  <h1 class="admin-brand">
+    <img src="/static/brand/logo-text-trim.png" alt="PitchMaster"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+    <span class="admin-fallback" style="display:none">老板<span>后台</span></span>
+  </h1>
   <p class="sub">营收 / 订单 / 质检 · 每 3 秒自动刷新</p>
 
   <div id="token-bar">

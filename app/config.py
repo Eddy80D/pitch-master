@@ -59,6 +59,9 @@ PRICE_YUAN: float = float(os.getenv("PRICE_YUAN", "19.9"))
 # 开场 Hero 背景视频；为空则用米白渐变兜底
 BG_VIDEO_URL: str = os.getenv("BG_VIDEO_URL", "")
 
+# 支付收款码：可填外部图片 URL；为空则用本地 /static/pay_qr.png
+PAY_QR_URL: str = os.getenv("PAY_QR_URL", "")
+
 # —— D3.5 营业打磨 ——
 # 付款即开审，老板事后核验；False 回退人工放行
 AUTO_APPROVE: bool = os.getenv("AUTO_APPROVE", "False").lower() in {

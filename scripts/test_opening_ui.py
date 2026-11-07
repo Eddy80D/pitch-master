@@ -50,7 +50,10 @@ def static_checks() -> None:
     for state in ["normal", "answer", "cheer", "sad"]:
         path = ROOT / "static" / "judges" / f"player-{state}.png"
         assert path.exists(), path
-    print("✅ 静态检查：资料卡/角色四态图齐全、零外链、评委展示名正确")
+    for name in ["logo-text-trim.png", "mascot.png", "mascot-64.png"]:
+        path = ROOT / "static" / "brand" / name
+        assert path.exists(), path
+    print("✅ 静态检查：资料卡/角色四态图/品牌资产齐全、零外链、评委展示名正确")
 
 
 def browser_checks(base_url: str) -> None:
@@ -77,6 +80,13 @@ def browser_checks(base_url: str) -> None:
         assert page.evaluate(
             "getComputedStyle(document.querySelector('.hero-title')).fontSize"
         ) == "72px"
+        assert page.evaluate(
+            "document.querySelector('.brand-logo img').naturalWidth > 0"
+        ), "顶栏 logo 未加载"
+        assert page.evaluate(
+            "document.querySelector('.hero-mascot').naturalWidth > 0"
+        ), "吉祥物未加载"
+        assert "mascot-64.png" in (page.get_attribute("link[rel='icon']", "href") or "")
 
         for index, card_id in enumerate(CARD_IDS):
             page.locator("#judge-lineup .judge-lineup-card").nth(index).click()
@@ -98,6 +108,13 @@ def browser_checks(base_url: str) -> None:
         )
         assert overflow <= 1, overflow
 
+        admin = browser.new_page()
+        admin.goto(base_url.rstrip("/") + "/admin", wait_until="domcontentloaded")
+        admin.wait_for_function(
+            "document.querySelector('.admin-brand img') && document.querySelector('.admin-brand img').naturalWidth > 0",
+            timeout=10000,
+        )
+        admin.close()
         browser.close()
 
     assert not outside, outside

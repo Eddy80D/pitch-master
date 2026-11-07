@@ -9,3 +9,6 @@ t7_screenshot.png
 
 reports/
 front.tmp.js
+
+# 真实收款码不入镜像（部署时挂载或 PAY_QR_URL 外部地址）
+static/pay_qr.png

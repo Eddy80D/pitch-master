@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="data:,">
+<link rel="icon" type="image/png" href="/static/brand/mascot-64.png">
 <title>路演大师 · PitchMaster</title>
 <style>  :root {
     --bg: #F5F4F1;
@@ -211,6 +211,23 @@
   }
   .hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .hero-overlay { position: absolute; inset: 0; background: rgba(255,255,255,.55); }
+  .brand-logo img { height: 30px; width: auto; display: block; }
+  .brand-fallback small { color: var(--ink-2); font-weight: 400; font-size: 12px; margin-left: 8px; letter-spacing: 1px; }
+  .hero-mascot {
+    position: absolute;
+    z-index: 3;
+    right: 6%;
+    top: 50%;
+    height: 76px;
+    transform: translateY(-50%);
+    animation: mascotFloat 3s ease-in-out infinite;
+    pointer-events: none;
+    filter: drop-shadow(0 6px 12px rgba(26,26,46,.12));
+  }
+  @keyframes mascotFloat {
+    0%, 100% { transform: translateY(-50%); }
+    50% { transform: translateY(calc(-50% - 6px)); }
+  }
   .hero-content { position: relative; z-index: 2; padding: 44px 20px; }
   .hero-kicker { color: var(--blue); font-size: 11px; letter-spacing: 4px; }
   .hero-title { font-size: 72px; line-height: 1.1; margin: 12px 0 10px; letter-spacing: 6px; font-weight: 800; color: var(--ink); }
@@ -624,6 +641,11 @@
   }
   @media (max-width: 760px) {
     .hero-title { font-size: 52px; letter-spacing: 4px; }
+    .hero-mascot { height: 48px; right: 12px; top: 14px; transform: none; animation: mascotFloatMobile 3s ease-in-out infinite; }
+    @keyframes mascotFloatMobile {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
     .lineup-grid { grid-template-columns: 1fr; }
     .flow-nav { width: 100%; margin-left: 0; }
     .theatre { padding: 42px 8px 0; }
@@ -652,13 +674,18 @@
 <body>
 <main>
   <header class="topbar">
-    <div class="brand">路演<span>大师</span><small>PitchMaster</small></div>
+    <div class="brand brand-logo">
+      <img src="/static/brand/logo-text-trim.png" alt="PitchMaster"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='inline';">
+      <span class="brand-fallback" style="display:none">路演<span>大师</span><small>PitchMaster</small></span>
+    </div>
     <nav class="flow-nav">初评 → 自我介绍 → 答辩 → 复议 → 亮椅 → 报告</nav>
   </header>
 
   <!-- 一级：提交页 -->
   <section id="screen-submit">
     <section class="hero">
+      <img class="hero-mascot" src="/static/brand/mascot.png" alt="吉祥物">
       <video id="hero-video" class="hero-video hidden" muted loop playsinline autoplay></video>
       <div class="hero-overlay"></div>
       <div class="hero-content">
@@ -1399,6 +1426,12 @@
         showScreen("submit");
         hide(form);
         show(payBox);
+        if (payload.qr_url) {
+          const qr = $("#pay-qr");
+          qr.src = payload.qr_url;
+          qr.style.display = "";
+          hide($("#pay-qr-fallback"));
+        }
         $("#pay-title").textContent = `扫码支付 ¥${payload.price ?? 19.9} 后开始评审`;
         $("#pay-hint").textContent = payload.auto_approve
           ? "支付后立即开审，老板事后核验。"

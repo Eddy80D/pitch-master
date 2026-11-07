@@ -221,7 +221,7 @@ async def _run_precheck(session: state_machine.Session) -> None:
         if config.PAYMENT_REQUIRED:
             await session.emit(
                 events.PAYMENT_WAITING,
-                qr_url="/static/pay_qr.png",
+                qr_url=config.PAY_QR_URL or "/static/pay_qr.png",
                 price=session.price,
                 auto_approve=config.AUTO_APPROVE,
             )
@@ -671,6 +671,7 @@ async def health() -> dict[str, Any]:
         "auto_approve": config.AUTO_APPROVE,
         "max_active_sessions_per_ip": config.MAX_ACTIVE_SESSIONS_PER_IP,
         "bg_video_url": config.BG_VIDEO_URL,
+        "pay_qr_url": config.PAY_QR_URL,
     }
 
 
@@ -766,7 +767,7 @@ async def create_session(
     if config.PAYMENT_REQUIRED:
         await session.emit(
             events.PAYMENT_WAITING,
-            qr_url="/static/pay_qr.png",
+            qr_url=config.PAY_QR_URL or "/static/pay_qr.png",
             price=session.price,
             auto_approve=config.AUTO_APPROVE,
         )
