@@ -81,6 +81,47 @@ async def wait_done(session: state_machine.Session, timeout: float = 3.0) -> Non
     raise AssertionError(f"会话未在 {timeout}s 内完成，phase={session.phase}")
 
 
+def test_public_snapshot_has_no_scores() -> None:
+    session = state_machine.store.create("https://github.com/demo/privacy")
+    session.verdict_initial = [
+        judges.JudgeVerdict(
+            judge_id="tech",
+            name="毒舌技术官",
+            dimension="完成度",
+            weight=25,
+            score=20,
+            verdict="turn",
+            rationale="初评秘密",
+        )
+    ]
+    session.phase = "judging"
+    public = session.public_snapshot()
+    assert "verdict_initial" not in public
+    assert "verdicts" not in public
+    assert "verdict_final" not in public
+    assert public["totals"] == {}
+    assert public["owner_comment"] == ""
+
+    session.verdict_final = [
+        judges.FinalVerdict(
+            judge_id="tech",
+            name="毒舌技术官",
+            dimension="完成度",
+            weight=25,
+            initial_score=20,
+            final_score=18,
+            direction="down",
+            reason="终评",
+            final_verdict="turn",
+        )
+    ]
+    session.phase = "done"
+    public_done = session.public_snapshot()
+    assert public_done["totals"]["valid_weight"] == 25
+    assert "verdict_final" not in public_done
+    print("✅ P0-1 公开快照不含初评/终评明细，仅 report/done 暴露总分")
+
+
 async def test_payment_and_admin() -> None:
     original_pipeline = main._run_pipeline
     original_required = config.PAYMENT_REQUIRED
@@ -160,6 +201,7 @@ async def test_payment_and_admin() -> None:
 async def main_test() -> int:
     test_demo_html_parser()
     await test_tech_cap()
+    test_public_snapshot_has_no_scores()
     await test_payment_and_admin()
     print("✅ D2 补丁自测全部通过")
     return 0

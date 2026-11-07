@@ -533,7 +533,7 @@ async def get_report(session_id: str):
 
 @app.get("/api/sessions/{session_id}")
 async def get_session(session_id: str) -> dict[str, Any]:
-    return _get_session(session_id).snapshot().model_dump()
+    return _get_session(session_id).public_snapshot()
 
 
 @app.get("/api/sessions/{session_id}/events")

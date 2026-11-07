@@ -226,6 +226,17 @@ class Session:
             created_at=self.created_at,
         )
 
+    def public_snapshot(self) -> dict[str, Any]:
+        """对前端公开的快照：不含任何初评/终评明细，防止 F12 提前看分。"""
+        data = self.snapshot().model_dump()
+        data.pop("verdicts", None)
+        data.pop("verdict_initial", None)
+        data.pop("verdict_final", None)
+        if self.phase not in {"report", "done"}:
+            data["totals"] = {}
+            data["owner_comment"] = ""
+        return data
+
     def _persist(self) -> None:
         """落盘备份。失败不影响主流程。"""
         try:
