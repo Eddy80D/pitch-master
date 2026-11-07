@@ -14,6 +14,12 @@ python -m uvicorn app.main:app --reload --port 8000
 
 演示模式默认 4 问 / 每问 45 秒 / 介绍 30 秒；完整模式改 `.env` 里的三个值（10 / 120 / 180）。
 
+### 支付与老板后台
+
+- `PAYMENT_REQUIRED=True`（默认）：用户创建会话后先看到收款码 `static/pay_qr.png`，点「我已支付」进入待放行；老板在 `/admin?token=<ADMIN_TOKEN>` 手动放行后才开始评审。
+- `PAYMENT_REQUIRED=False`：跳过收款，直接开跑（开发/评审演示用）。
+- `ADMIN_TOKEN` 为空时，所有 `/api/admin/*` 返回 404。
+
 ### 闭环接口
 
 | 方法 | 路径 | 说明 |
@@ -24,6 +30,10 @@ python -m uvicorn app.main:app --reload --port 8000
 | POST | `/api/sessions/{id}/answer` | 提交当前问题回答（≤2000 字） |
 | POST | `/api/sessions/{id}/skip` | 跳过答辩直达合议（仅 intro/qa） |
 | GET | `/api/sessions/{id}/report` | 下载 Markdown 报告（202=生成中，404=未生成） |
+| POST | `/api/sessions/{id}/paid` | 用户标记已支付 → pending |
+| GET | `/api/admin/orders?token=…` | 待放行订单（错 token 返回 404） |
+| POST | `/api/admin/approve/{id}?token=…` | 老板放行 → 启动流水线 |
+| POST | `/api/admin/comment/{id}?token=…` | 老板亲签评语 |
 
 ## 自测
 
@@ -31,6 +41,7 @@ python -m uvicorn app.main:app --reload --port 8000
 python scripts/smoke.py                      # T1：pro 非流式 + flash 流式 + usage 记账
 python scripts/test_state_machine.py         # T2/T9：等待点、超时、skip、事件序列
 python scripts/test_full_loop.py             # T16：mock 全流程（不调 API）
+python scripts/test_patch.py                 # D2 补丁：支付/admin/PRD 上限/HTML 提取（不调 API）
 python scripts/test_e2e.py                   # T16：浏览器端到端（需 Chrome + playwright，会调真实 API）
 ```
 

@@ -9,7 +9,6 @@
   :root {
     --bg: #0a0a0c;
     --panel: #14141a;
-    --panel-2: #1b1b23;
     --line: #282832;
     --text: #ececf1;
     --muted: #8b8b99;
@@ -82,7 +81,7 @@
   .hint { color: var(--muted); font-size: 12px; }
   #form-submit { justify-self: start; margin-top: 4px; }
 
-  #status { display: flex; align-items: center; gap: 10px; margin: 28px 0 16px; font-size: 14px; }
+  #status { display: flex; align-items: center; gap: 10px; margin: 4px 0 16px; font-size: 14px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
   .dot.live { background: var(--gold); box-shadow: 0 0 12px var(--gold); animation: pulse 1.4s infinite; }
   .dot.done { background: var(--green); box-shadow: 0 0 12px var(--green); }
@@ -106,6 +105,10 @@
     font-size: 14px;
   }
 
+  #pay-box { text-align: center; margin-top: 16px; }
+  #pay-box img { width: 220px; max-width: 70vw; border-radius: 10px; background: #fff; padding: 6px; }
+  #pay-box .pay-title { color: var(--gold); font-size: 15px; margin: 0 0 12px; }
+
   #judges { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
   .judge {
     background: var(--panel);
@@ -120,16 +123,17 @@
   .judge.degraded { opacity: .6; }
   .judge-head { display: flex; align-items: baseline; gap: 8px; }
   .judge-name { font-weight: 700; font-size: 15px; }
-  .judge-dim { color: var(--muted); font-size: 12px; }
   .judge-verdict { margin-left: auto; font-size: 11px; font-family: var(--mono); padding: 2px 8px; border-radius: 999px; }
   .turn .judge-verdict { color: var(--green); background: rgba(88,192,138,.12); }
   .hold .judge-verdict { color: var(--red); background: rgba(224,106,106,.12); }
-  .judge-score { font-family: var(--mono); font-size: 30px; margin: 10px 0 6px; }
-  .judge-score small { color: var(--muted); font-size: 13px; }
-  .judge-rationale { color: #c9c9d2; font-size: 13px; line-height: 1.65; margin: 0 0 8px; }
-  .judge-q { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 0; padding-left: 16px; }
-  .judge-q li { margin-bottom: 3px; }
-  .judge-final { margin-top: 8px; font-size: 12px; color: var(--gold); font-family: var(--mono); }
+  .judge-status { color: var(--muted); font-size: 13px; margin-top: 10px; }
+  .judge.ready .judge-status { color: var(--green); }
+  .judge-final { display: none; }
+  .judge.revealed .judge-status { display: none; }
+  .judge.revealed .judge-final { display: block; }
+  .judge-final-score { font-family: var(--mono); font-size: 28px; margin: 8px 0 4px; }
+  .judge-final-score small { color: var(--muted); font-size: 13px; }
+  .judge-final-reason { color: #c9c9d2; font-size: 13px; line-height: 1.65; margin: 0; }
 
   #log {
     margin-top: 28px;
@@ -149,6 +153,26 @@
   #log .green { color: var(--green); }
   #log .red { color: var(--red); }
   #log .hot { color: #ff9d5c; }
+
+  #report-summary { font-size: 15px; line-height: 2; margin: 14px 0 18px; }
+  #report-summary b { color: var(--gold); font-family: var(--mono); }
+  .owner {
+    border-left: 3px solid var(--gold);
+    background: rgba(217, 180, 91, .07);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+  }
+  .owner .owner-label { color: var(--gold); font-size: 12px; letter-spacing: 1px; }
+  .badge {
+    margin-top: 22px;
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    padding: 22px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
   .hidden { display: none !important; }
   @media (max-width: 640px) {
     main { padding-top: 36px; }
@@ -165,63 +189,90 @@
     <p class="sub">投一个仓库，让五位 AI 评委先替你挑刺。<br>初评 → 自我介绍 → 答辩 → 复议 → 亮椅 → 报告。</p>
   </header>
 
-  <form id="form">
-    <div>
-      <label for="repo">GitHub 仓库（必填）</label>
-      <input id="repo" name="repo" placeholder="https://github.com/owner/repo" autocomplete="off" required>
-    </div>
-    <div class="row">
+  <!-- 一级：提交页 -->
+  <section id="screen-submit">
+    <form id="form">
       <div>
-        <label for="prd">PRD 链接或摘要（选填，暂不参与评分）</label>
-        <input id="prd" name="prd" placeholder="https://... 或一两句话" autocomplete="off">
+        <label for="repo">GitHub 仓库（必填）</label>
+        <input id="repo" name="repo" placeholder="https://github.com/owner/repo" autocomplete="off" required>
       </div>
-      <div>
-        <label for="demo">成品网址（选填，暂不参与评分）</label>
-        <input id="demo" name="demo" placeholder="https://..." autocomplete="off">
+      <div class="row">
+        <div>
+          <label for="prd">PRD 链接或摘要（选填，缺省会限制商业化评分）</label>
+          <input id="prd" name="prd" placeholder="https://... 或一两句话" autocomplete="off">
+        </div>
+        <div>
+          <label for="demo">成品网址（选填，缺省会限制完成度评分）</label>
+          <input id="demo" name="demo" placeholder="https://..." autocomplete="off">
+        </div>
       </div>
-    </div>
-    <button id="form-submit" type="submit">开始评审</button>
-    <div class="hint">仓库以浅克隆方式读取，只读不写。演示模式默认 4 问、每问 45 秒。</div>
-  </form>
+      <button id="form-submit" type="submit">开始评审</button>
+      <div class="hint">仓库以浅克隆方式读取，只读不写。演示模式默认 4 问、每问 45 秒。</div>
+    </form>
 
-  <section id="status" class="hidden">
-    <span id="dot" class="dot live"></span>
-    <span id="phase">准备中</span>
-    <span id="summary"></span>
+    <div id="pay-box" class="card hidden">
+      <p class="pay-title">扫码支付后开始评审</p>
+      <img id="pay-qr" src="/static/pay_qr.png" alt="收款码">
+      <div class="actions" style="justify-content:center">
+        <button id="paid-btn" type="button">我已支付</button>
+      </div>
+      <p id="pay-hint" class="hint"></p>
+    </div>
   </section>
 
-  <section id="interaction">
-    <div id="intro-box" class="card hidden">
-      <h2>先介绍一下你的项目</h2>
-      <p>30 秒：做什么、给谁、现在做到什么程度。不写也能过，但评委只能按代码判断。</p>
-      <textarea id="intro-text" maxlength="500" placeholder="例：我们做了一个面向大学生的 AI 简历优化工具，已上线 3 个模板，日均 200 次调用……"></textarea>
-      <div class="actions">
-        <button id="intro-submit" type="button">提交介绍</button>
-        <button id="intro-skip" class="ghost" type="button">直接宣判</button>
-        <span id="intro-hint" class="hint"></span>
-      </div>
+  <!-- 二级：舞台页 -->
+  <section id="screen-stage" class="hidden">
+    <div id="status">
+      <span id="dot" class="dot live"></span>
+      <span id="phase">准备中</span>
+      <span id="summary"></span>
     </div>
 
-    <div id="answer-box" class="card hidden">
-      <div class="q-label">评委追问 <span id="q-index"></span></div>
-      <p id="q-text" class="q-text"></p>
-      <textarea id="answer-text" maxlength="2000" placeholder="直接回答，别背稿；说不清就承认，评委更看重边界感……"></textarea>
-      <div class="actions">
-        <button id="answer-submit" type="button">提交回答</button>
-        <button id="answer-skip" class="ghost" type="button">直接宣判</button>
-        <span id="answer-hint" class="hint"></span>
+    <section id="interaction">
+      <div id="intro-box" class="card hidden">
+        <h2>先介绍一下你的项目</h2>
+        <p>30 秒：做什么、给谁、现在做到什么程度。不写也能过，但评委只能按代码判断。</p>
+        <textarea id="intro-text" maxlength="500" placeholder="例：我们做了一个面向大学生的 AI 简历优化工具，已上线 3 个模板，日均 200 次调用……"></textarea>
+        <div class="actions">
+          <button id="intro-submit" type="button">提交介绍</button>
+          <button id="intro-skip" class="ghost" type="button">直接宣判</button>
+          <span id="intro-hint" class="hint"></span>
+        </div>
       </div>
-    </div>
 
-    <div id="report-box" class="card hidden">
-      <h2>预评审报告已生成</h2>
-      <p>包含总分、临场力、各维度评语、答辩实录、证据附录与 90 秒演讲稿。</p>
+      <div id="answer-box" class="card hidden">
+        <div class="q-label">评委追问 <span id="q-index"></span></div>
+        <p id="q-text" class="q-text"></p>
+        <textarea id="answer-text" maxlength="2000" placeholder="直接回答，别背稿；说不清就承认，评委更看重边界感……"></textarea>
+        <div class="actions">
+          <button id="answer-submit" type="button">提交回答</button>
+          <button id="answer-skip" class="ghost" type="button">直接宣判</button>
+          <span id="answer-hint" class="hint"></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="judges"></section>
+    <section id="log"></section>
+  </section>
+
+  <!-- 三级：报告页 -->
+  <section id="screen-report" class="hidden">
+    <div class="card">
+      <h2>预评审报告</h2>
+      <div id="owner-comment" class="owner hidden">
+        <div class="owner-label">老板亲签</div>
+        <div id="owner-comment-text"></div>
+      </div>
+      <div id="report-summary">报告生成中…</div>
       <a id="report-link" class="report-link" href="#" download>下载 Markdown 报告</a>
+      <div class="badge">🏅 徽章位（待设计）</div>
+      <div class="actions">
+        <button id="restart" class="ghost" type="button">再来一单</button>
+      </div>
     </div>
+    <section id="log-report"></section>
   </section>
-
-  <section id="judges"></section>
-  <section id="log" class="hidden"></section>
 </main>
 
 <script>
@@ -243,7 +294,6 @@
   const form = $("#form");
   const startBtn = $("#form-submit");
   const repoInput = $("#repo");
-  const statusBar = $("#status");
   const dot = $("#dot");
   const phaseEl = $("#phase");
   const summaryEl = $("#summary");
@@ -251,18 +301,18 @@
   const logEl = $("#log");
   const introBox = $("#intro-box");
   const answerBox = $("#answer-box");
-  const reportBox = $("#report-box");
+  const payBox = $("#pay-box");
 
   let source = null;
   let sessionId = null;
   let lastEventId = -1;
   let finished = false;
+  let paymentRequired = false;
   const cards = new Map();
 
   const now = () => new Date().toTimeString().slice(0, 8);
 
   function log(text, cls = "") {
-    logEl.classList.remove("hidden");
     const line = document.createElement("div");
     const t = document.createElement("span");
     t.className = "t";
@@ -275,12 +325,6 @@
     logEl.scrollTop = logEl.scrollHeight;
   }
 
-  function setPhase(phase) {
-    phaseEl.textContent = PHASE_LABEL[phase] || phase;
-    if (finished) return;
-    dot.classList.toggle("live", phase !== "done");
-  }
-
   function el(tag, cls, text) {
     const node = document.createElement(tag);
     if (cls) node.className = cls;
@@ -288,12 +332,26 @@
     return node;
   }
 
-  function show(node) {
-    node.classList.remove("hidden");
+  function show(node) { node.classList.remove("hidden"); }
+  function hide(node) { node.classList.add("hidden"); }
+
+  function showScreen(name) {
+    hide($("#screen-submit"));
+    hide($("#screen-stage"));
+    hide($("#screen-report"));
+    show($(`#screen-${name}`));
   }
 
-  function hide(node) {
-    node.classList.add("hidden");
+  function setPhase(phase) {
+    phaseEl.textContent = PHASE_LABEL[phase] || phase;
+    if (finished) return;
+    dot.classList.toggle("live", phase !== "done");
+  }
+
+  function screenForPhase(phase) {
+    if (["created"].includes(phase)) return "submit";
+    if (["report", "done"].includes(phase)) return "report";
+    return "stage";
   }
 
   function resetInputs() {
@@ -317,76 +375,92 @@
     return data;
   }
 
-  function renderVerdict(p) {
-    let card = cards.get(p.judge_id);
+  // ---------------- 评委卡片：judging 阶段只有"审阅中/已就位"，不显示分数
+  function ensureCard(judgeId, name) {
+    let card = cards.get(judgeId);
     if (!card) {
       card = el("article", "judge");
-      card.dataset.id = p.judge_id;
-      card.append(
-        el("div", "judge-head"),
-        el("div", "judge-score"),
-        el("p", "judge-rationale")
+      card.dataset.id = judgeId;
+      const head = el("div", "judge-head");
+      head.append(
+        el("span", "judge-name", name || judgeId),
+        el("span", "judge-verdict", "")
       );
-      cards.set(p.judge_id, card);
+      card.append(
+        head,
+        el("div", "judge-status", "审阅中…"),
+        el("div", "judge-final")
+      );
+      cards.set(judgeId, card);
       judgesEl.appendChild(card);
     }
-
-    const verdict = p.verdict === "turn" ? "turn" : "hold";
-    card.classList.remove("turn", "hold", "degraded");
-    card.classList.add(verdict);
-    if (p.degraded) card.classList.add("degraded");
-
-    const head = card.querySelector(".judge-head");
-    head.replaceChildren(
-      el("span", "judge-name", p.name || p.judge_id),
-      el("span", "judge-dim", p.dimension || ""),
-      el("span", "judge-verdict", verdict === "turn" ? "转身 TURN" : "留座 HOLD")
-    );
-
-    const score = card.querySelector(".judge-score");
-    score.replaceChildren();
-    score.append(document.createTextNode(String(p.score ?? 0)));
-    if (p.weight > 0) score.append(el("small", "", " / " + p.weight));
-
-    card.querySelector(".judge-rationale").textContent = p.rationale || "（无评语）";
-
-    if (Array.isArray(p.questions) && p.questions.length) {
-      let q = card.querySelector(".judge-q");
-      if (!q) {
-        q = el("ol", "judge-q");
-        card.appendChild(q);
-      }
-      q.replaceChildren(...p.questions.map((item) => el("li", "", item)));
+    if (name) {
+      card.querySelector(".judge-name").textContent = name;
     }
+    return card;
   }
 
-  function updateFinal(p) {
-    let card = cards.get(p.judge_id);
-    if (!card) return;
-    let line = card.querySelector(".judge-final");
-    if (!line) {
-      line = el("div", "judge-final");
-      card.appendChild(line);
-    }
+  function markReady(judgeId, name) {
+    const card = ensureCard(judgeId, name);
+    card.classList.add("ready");
+    card.querySelector(".judge-status").textContent = "已就位 ✓";
+  }
+
+  function renderReveal(p) {
+    const card = ensureCard(p.judge_id, p.name);
+    card.classList.add("revealed");
+    card.classList.remove("turn", "hold", "degraded");
+
+    const chip = card.querySelector(".judge-verdict");
     if (p.turned === null) {
-      line.textContent = "终评：缺席（缺评）";
-      card.classList.add("degraded");
+      card.classList.add("degraded", "hold");
+      chip.textContent = "缺席";
+      card.querySelector(".judge-final").replaceChildren(
+        el("p", "judge-final-reason", "复议失败，缺评（不编造分数）")
+      );
       return;
     }
-    line.textContent = `终评：${p.final_score ?? 0} / ${p.weight ?? 0} · ${p.turned ? "转身" : "留座"}`;
+
+    card.classList.add(p.turned ? "turn" : "hold");
+    chip.textContent = p.turned ? "转身 TURN" : "留座 HOLD";
+
+    const score = el("div", "judge-final-score");
+    score.append(document.createTextNode(String(p.final_score ?? 0)));
+    if (p.weight > 0) score.append(el("small", "", " / " + p.weight));
+
+    const final = card.querySelector(".judge-final");
+    final.replaceChildren(
+      score,
+      el("p", "judge-final-reason", p.reason || "（无评语）")
+    );
   }
 
-  function updateSummary() {
-    let score = 0;
-    let weight = 0;
-    for (const card of judgesEl.children) {
-      const raw = card.querySelector(".judge-score").textContent.split("/");
-      score += parseInt(raw[0], 10) || 0;
-      if (raw[1]) weight += parseInt(raw[1].replace(/\D/g, ""), 10) || 0;
+  function renderReport(data) {
+    const totals = data.totals || {};
+    const delta = Number(totals.delta ?? 0);
+    const sign = delta >= 0 ? "+" : "";
+    const summary = $("#report-summary");
+    if (totals.valid_weight === undefined) {
+      summary.textContent = "报告已生成，可下载查看。";
+    } else {
+      summary.replaceChildren(
+        document.createTextNode("初评 "),
+        el("b", "", String(totals.initial ?? 0)),
+        document.createTextNode(" → 终评 "),
+        el("b", "", String(totals.final ?? 0)),
+        document.createTextNode(`（临场力 ${sign}${delta}，有效权重 ${totals.valid_weight}）`)
+      );
+      if (totals.missing && totals.missing.length) {
+        summary.append(el("div", "hint", `缺评维度：${totals.missing.join("、")}`));
+      }
     }
-    if (weight > 0) {
-      summaryEl.textContent = `初评 ${score} / ${weight}（${Math.round((score / weight) * 100)}%）`;
+
+    if (data.owner_comment) {
+      $("#owner-comment-text").textContent = data.owner_comment;
+      show($("#owner-comment"));
     }
+    $("#report-link").href = `/api/sessions/${sessionId}/report`;
+    showScreen("report");
   }
 
   function finish(failed) {
@@ -402,7 +476,6 @@
     dot.classList.remove("live");
     dot.classList.add(failed ? "fail" : "done");
     if (!failed) phaseEl.textContent = PHASE_LABEL.done;
-    updateSummary();
   }
 
   function handle(ev) {
@@ -411,9 +484,26 @@
       case "session.created":
         log(`会话 ${payload.session_id} 已创建`, "gold");
         break;
+      case "payment.waiting":
+        showScreen("submit");
+        show(payBox);
+        $("#pay-hint").textContent = "扫码支付后点「我已支付」，老板放行后自动开跑。";
+        break;
+      case "payment.pending":
+        show(payBox);
+        $("#pay-hint").textContent = "已通知老板，等待放行…";
+        $("#paid-btn").disabled = true;
+        break;
+      case "payment.approved":
+        hide(payBox);
+        log("老板已放行，评审开始", "gold");
+        break;
       case "phase.changed":
         setPhase(payload.phase);
         log(`阶段 → ${PHASE_LABEL[payload.phase] || payload.phase}`);
+        if (!paymentRequired || payload.phase !== "created") {
+          showScreen(screenForPhase(payload.phase));
+        }
         if (["deliberation", "reveal", "report", "done"].includes(payload.phase)) {
           hide(introBox);
           hide(answerBox);
@@ -425,14 +515,16 @@
         break;
       case "loading.done":
         log(`仓库读取完成：${payload.files_read} 个文件 / ${payload.chars} 字符`, "green");
+        if (payload.prd_provided) log("PRD 已纳入评审", "green");
+        if (payload.demo_provided) log("成品网址已纳入评审", "green");
         break;
       case "judge.thinking":
+        ensureCard(payload.judge_id);
         log(`评委 ${payload.judge_id} 正在阅读证据包…`);
         break;
-      case "judge.initial":
-        log(`评委「${payload.name || payload.judge_id}」给出 ${payload.score} 分 · ${payload.verdict}`, payload.degraded ? "red" : "green");
-        renderVerdict(payload);
-        updateSummary();
+      case "judge.ready":
+        markReady(payload.judge_id, payload.name);
+        log(`评委「${payload.name}」已就位`, "green");
         break;
       case "intro.requested":
         log("请做自我介绍（30 秒内）", "gold");
@@ -460,7 +552,7 @@
         break;
       case "qa.answer":
         hide(answerBox);
-        log(`回答已记录`, "green");
+        log("回答已记录", "green");
         break;
       case "qa.reaction":
         log(`「${payload.name}」：${payload.text}`);
@@ -479,17 +571,16 @@
         log(`🔥 ${payload.name}：${payload.text}`, "hot");
         break;
       case "reveal.chair":
+        renderReveal(payload);
         if (payload.turned === null) {
           log(`🪑 ${payload.name}：缺席（缺评）`, "red");
         } else {
           log(`🪑 ${payload.name}：${payload.turned ? "✅ 转身" : "❌ 留座"} ${payload.final_score ?? 0}/${payload.weight}`, payload.turned ? "green" : "red");
         }
-        updateFinal(payload);
         break;
       case "report.ready":
         log(`报告已生成（${payload.chars} 字）`, "green");
-        $("#report-link").href = `/api/sessions/${sessionId}/report`;
-        show(reportBox);
+        renderReport(payload);
         break;
       case "error":
         log(`[${payload.stage}] ${payload.msg}`, "red");
@@ -500,6 +591,59 @@
     }
   }
 
+  function connect(id) {
+    if (source) source.close();
+    lastEventId = -1;
+    source = new EventSource(`/api/sessions/${id}/events`);
+    source.onmessage = (msg) => {
+      const idNum = Number(msg.lastEventId);
+      if (Number.isFinite(idNum)) {
+        if (idNum <= lastEventId) return;
+        lastEventId = idNum;
+      }
+      try {
+        handle(JSON.parse(msg.data));
+      } catch (err) {
+        console.error(err, msg.data);
+      }
+    };
+    source.onerror = () => {
+      if (!finished) log("SSE 连接中断，浏览器会自动重连…", "red");
+    };
+  }
+
+  async function restore(id) {
+    sessionId = id;
+    try {
+      const resp = await fetch(`/api/sessions/${id}`);
+      if (!resp.ok) throw new Error("会话不存在");
+      const snap = await resp.json();
+      showScreen(screenForPhase(snap.phase));
+      setPhase(snap.phase);
+      if (snap.paid_status === "unpaid") {
+        showScreen("submit");
+        show(payBox);
+        $("#pay-hint").textContent = "扫码支付后点「我已支付」。";
+      } else if (snap.paid_status === "pending") {
+        showScreen("submit");
+        show(payBox);
+        $("#pay-hint").textContent = "已通知老板，等待放行…";
+        $("#paid-btn").disabled = true;
+      }
+      if (snap.phase === "report" || snap.phase === "done") {
+        renderReport({
+          totals: snap.totals || {},
+          owner_comment: snap.owner_comment || "",
+        });
+      }
+      connect(id);
+    } catch (err) {
+      log(String(err.message || err), "red");
+      history.replaceState(null, "", location.pathname);
+      showScreen("submit");
+    }
+  }
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const repo = repoInput.value.trim();
@@ -507,14 +651,12 @@
 
     startBtn.disabled = true;
     finished = false;
-    lastEventId = -1;
     cards.clear();
     judgesEl.replaceChildren();
     logEl.replaceChildren();
-    hide(reportBox);
+    hide(payBox);
     hide(introBox);
     hide(answerBox);
-    statusBar.classList.remove("hidden");
     summaryEl.textContent = "";
     dot.className = "dot live";
     phaseEl.textContent = "正在创建会话…";
@@ -526,23 +668,18 @@
         demo_url: $("#demo").value.trim() || null,
       });
       sessionId = data.session_id;
-      if (source) source.close();
-      source = new EventSource(`/api/sessions/${sessionId}/events`);
-      source.onmessage = (msg) => {
-        const id = Number(msg.lastEventId);
-        if (Number.isFinite(id)) {
-          if (id <= lastEventId) return;
-          lastEventId = id;
-        }
-        try {
-          handle(JSON.parse(msg.data));
-        } catch (err) {
-          console.error(err, msg.data);
-        }
-      };
-      source.onerror = () => {
-        if (!finished) log("SSE 连接中断，浏览器会自动重连…", "red");
-      };
+      paymentRequired = Boolean(data.payment_required);
+      history.replaceState(null, "", `?s=${sessionId}`);
+      if (paymentRequired) {
+        setPhase("created");
+        showScreen("submit");
+        show(payBox);
+        $("#pay-hint").textContent = "扫码支付后点「我已支付」，老板放行后自动开跑。";
+        $("#paid-btn").disabled = false;
+      } else {
+        showScreen("stage");
+      }
+      connect(sessionId);
     } catch (err) {
       startBtn.disabled = false;
       log(String(err.message || err), "red");
@@ -585,6 +722,31 @@
 
   $("#intro-skip").addEventListener("click", skip);
   $("#answer-skip").addEventListener("click", skip);
+
+  $("#paid-btn").addEventListener("click", async () => {
+    $("#paid-btn").disabled = true;
+    try {
+      await post(`/api/sessions/${sessionId}/paid`, {});
+      $("#pay-hint").textContent = "已通知老板，等待放行…";
+    } catch (err) {
+      $("#paid-btn").disabled = false;
+      $("#pay-hint").textContent = String(err.message || err);
+    }
+  });
+
+  $("#restart").addEventListener("click", () => {
+    history.replaceState(null, "", location.pathname);
+    location.reload();
+  });
+
+  // 刷新恢复：URL 上带 ?s=session_id
+  const params = new URLSearchParams(location.search);
+  const existing = params.get("s");
+  if (existing) {
+    hide($("#screen-submit"));
+    showScreen("stage");
+    restore(existing);
+  }
 })();
 </script>
 </body>

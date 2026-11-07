@@ -17,7 +17,13 @@ import uuid
 from typing import Any, AsyncIterator
 
 from . import config, events
-from .schemas import EvidencePack, FinalVerdict, JudgeVerdict, SessionState
+from .schemas import (
+    EvidencePack,
+    FinalVerdict,
+    JudgeVerdict,
+    SessionState,
+    score_totals,
+)
 
 PHASES = [
     "created",
@@ -56,6 +62,13 @@ class Session:
         self.bicker: list[dict[str, Any]] = []
         self.report_text: str | None = None
         self.report_ready = False
+        self.prd_text: str = ""
+        self.demo_text: str = ""
+
+        # P0-4：支付与老板后台
+        self.paid_status = "unpaid"  # unpaid → pending → approved
+        self.owner_comment = ""
+        self.pipeline_started = False
 
         self.error: dict[str, Any] | None = None
         self.created_at = time.time()
@@ -202,6 +215,13 @@ class Session:
             intro_text=self.intro_text,
             bicker=self.bicker,
             report_ready=self.report_ready,
+            paid_status=self.paid_status,
+            owner_comment=self.owner_comment,
+            totals=(
+                score_totals(self.verdict_initial, self.verdict_final)
+                if self.verdict_final
+                else {}
+            ),
             error=self.error,
             created_at=self.created_at,
         )
@@ -231,6 +251,9 @@ class SessionStore:
 
     def get(self, session_id: str) -> Session | None:
         return self._sessions.get(session_id)
+
+    def all(self) -> list[Session]:
+        return list(self._sessions.values())
 
 
 store = SessionStore()

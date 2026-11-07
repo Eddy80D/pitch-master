@@ -5,18 +5,23 @@
 
 from __future__ import annotations
 
+import ipaddress
+import logging
 import os
 import re
 import shutil
 import subprocess
 import tempfile
 import zipfile
+from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlparse
 
 import httpx
 
 from . import config
+
+logger = logging.getLogger(__name__)
 
 SKIP_DIRS = {
     ".git",
@@ -299,6 +304,87 @@ def _collect(root: Path, repo_url: str) -> dict:
         "files_skipped": files_skipped,
         "files_total": len(candidates),
     }
+
+
+class _VisibleTextParser(HTMLParser):
+    """只收可见文本，丢掉 script/style/head 等。"""
+
+    SKIP_TAGS = {"script", "style", "noscript", "template", "svg", "head"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+        self._skip_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in self.SKIP_TAGS:
+            self._skip_depth += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in self.SKIP_TAGS and self._skip_depth > 0:
+            self._skip_depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if self._skip_depth == 0:
+            text = data.strip()
+            if text:
+                self.parts.append(text)
+
+
+def _is_private_host(host: str) -> bool:
+    host = (host or "").strip("[]").lower()
+    if host in {"localhost", "0.0.0.0"}:
+        return True
+    if host.endswith(".local") or host.endswith(".internal"):
+        return True
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
+
+
+def fetch_demo_page(url: str) -> str:
+    """抓成品网址首页可见文本，失败返回空串（不阻断评审）。"""
+    if not url:
+        return ""
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        logger.warning("成品网址不合法，已跳过：%s", url)
+        return ""
+    if _is_private_host(parsed.hostname):
+        logger.warning("成品网址指向内网地址，已拒绝：%s", url)
+        return ""
+
+    try:
+        with httpx.Client(
+            follow_redirects=True,
+            timeout=httpx.Timeout(30.0, connect=10.0),
+        ) as client:
+            with client.stream("GET", url) as resp:
+                if resp.status_code >= 400:
+                    logger.warning("成品网址返回 HTTP %s：%s", resp.status_code, url)
+                    return ""
+                if _is_private_host(resp.url.host or ""):
+                    logger.warning("成品网址重定向到内网地址，已拒绝：%s", resp.url)
+                    return ""
+                raw = bytearray()
+                for chunk in resp.iter_bytes():
+                    raw.extend(chunk)
+                    if len(raw) > 2_000_000:
+                        break
+                html_text = bytes(raw).decode(resp.encoding or "utf-8", errors="replace")
+    except Exception as exc:  # 网络失败不阻断评审
+        logger.warning("成品网址抓取失败（%s）：%s", url, exc)
+        return ""
+
+    parser = _VisibleTextParser()
+    try:
+        parser.feed(html_text)
+    except Exception:
+        pass
+    text = re.sub(r"\s+", " ", " ".join(parser.parts)).strip()
+    return text[:20_000]
 
 
 def load_repository(repo_url: str) -> dict:

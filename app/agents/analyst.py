@@ -18,10 +18,28 @@ concerns[](同结构), injection_alert:{detected,location,quote}。
 RETRY_PROMPT = "上面的输出无法解析为合法 JSON 或字段类型不对。请严格按约定重新输出一个完整 JSON 对象，不要 markdown 代码块，不要解释。"
 
 
-async def analyze(repo_text: str, repo_url: str) -> EvidencePack:
+async def analyze(
+    repo_text: str,
+    repo_url: str,
+    prd_text: str = "",
+    demo_text: str = "",
+) -> EvidencePack:
+    system_prompt = ANALYST_PROMPT
+    if prd_text or demo_text:
+        system_prompt += (
+            "\n要求追加：PRD 中的承诺与代码实现不符之处，记入 concerns"
+            "（这是「对质时刻」的素材）。"
+        )
+
+    sections = [f"仓库内容如下：\n\n{repo_text}"]
+    if prd_text:
+        sections.append(f"【团队 PRD】\n{prd_text[:20_000]}")
+    if demo_text:
+        sections.append(f"【成品网站首页文本】\n{demo_text[:20_000]}")
+
     messages = [
-        {"role": "system", "content": ANALYST_PROMPT},
-        {"role": "user", "content": f"仓库内容如下：\n\n{repo_text}"},
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": "\n\n".join(sections)},
     ]
 
     last_error: Exception | None = None
@@ -37,6 +55,8 @@ async def analyze(repo_text: str, repo_url: str) -> EvidencePack:
             data = extract_json(text)
             data.pop("repo_url", None)
             pack = EvidencePack(repo_url=repo_url, **data)
+            pack.prd_provided = bool(prd_text.strip())
+            pack.demo_provided = bool(demo_text.strip())
             return pack
         except Exception as exc:  # JSON 解析失败 / pydantic 校验失败
             last_error = exc

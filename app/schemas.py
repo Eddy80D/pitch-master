@@ -43,6 +43,9 @@ class EvidencePack(BaseModel):
     )
     files_read: int = 0
     files_skipped: int = 0
+    # P0-2：PRD / 成品网址是否提供（影响评委判断与 tech 分数上限）
+    prd_provided: bool = False
+    demo_provided: bool = False
 
     @field_validator("tech_stack", mode="before")
     @classmethod
@@ -172,6 +175,9 @@ class SessionState(BaseModel):
     intro_text: str | None = None
     bicker: list[dict[str, Any]] = Field(default_factory=list)
     report_ready: bool = False
+    paid_status: str = "unpaid"
+    owner_comment: str = ""
+    totals: dict[str, Any] = Field(default_factory=dict)
     error: dict[str, Any] | None = None
     created_at: float = 0.0
 

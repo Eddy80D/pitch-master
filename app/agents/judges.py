@@ -116,6 +116,24 @@ async def _evaluate_one(
     if weight == 0:
         prompt += ZERO_WEIGHT_NOTE
 
+    # P0-2：缺省材料时，对应维度必须点明
+    if judge_id == "biz":
+        if pack.prd_provided:
+            prompt += "\nPRD 是否提供：True。"
+        else:
+            prompt += (
+                "\nPRD 是否提供：False。未提供则商业化判断只能基于 README/介绍，"
+                "rationale 里须点明「没有 PRD，商业化全靠猜」。"
+            )
+    if judge_id == "tech":
+        if pack.demo_provided:
+            prompt += "\n成品网址是否提供：True。"
+        else:
+            prompt += (
+                "\n成品网址是否提供：False。未提供则完成度上限 15/25，"
+                "rationale 须点明「没有可访问的成品」。"
+            )
+
     messages = [
         {"role": "system", "content": prompt},
         {"role": "user", "content": _pack_json(pack)},
@@ -144,7 +162,12 @@ async def _evaluate_one(
                 },
             )
             verdict.score = _clamp(verdict.score, weight)
-            if weight > 0 and "verdict" not in data:
+            if judge_id == "tech" and not pack.demo_provided:
+                verdict.score = min(verdict.score, 15)
+            if weight > 0 and (
+                "verdict" not in data
+                or (judge_id == "tech" and not pack.demo_provided)
+            ):
                 verdict.verdict = "turn" if verdict.score >= weight * 0.7 else "hold"
             return verdict
         except Exception as exc:
@@ -261,6 +284,7 @@ async def reconsider_all(
     initial: list[JudgeVerdict],
     transcript_text: str,
     encore_ids: set[str] | None = None,
+    demo_provided: bool = True,
 ) -> list[FinalVerdict]:
     """全量复议（并行）。单个评委失败按缺评处理，绝不编造分数。"""
     encore_ids = encore_ids or set()
@@ -307,6 +331,8 @@ async def reconsider_all(
                     encore=verdict.judge_id in encore_ids,
                 )
                 final.final_score = _clamp(final.final_score, weight)
+                if verdict.judge_id == "tech" and not demo_provided:
+                    final.final_score = min(final.final_score, 15)
                 # 与 D1 规则保持一致：计分评委的转身由分数阈值决定，
                 # 避免出现"0 分却写 turn"的自相矛盾终评。
                 if weight > 0:

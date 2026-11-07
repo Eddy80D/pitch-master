@@ -1,12 +1,13 @@
-"""T16 浏览器端到端：初评 → 自我介绍 → 答辩 → 复议/互怼/亮椅 → 报告。
+"""T16 浏览器端到端：支付 → 初评 → 自我介绍 → 答辩 → 复议 → 亮椅 → 报告 → 刷新恢复。
 
 用法：python scripts/test_e2e.py [base_url] [repo_url]
 前置：服务已启动；本机有 Chrome（playwright 使用 channel=chrome）。
-注意：会调用真实 MiMo API（约 20 次），请控制运行次数。
+注意：会调用真实 MiMo API（约 16–20 次），请控制运行次数。
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -20,6 +21,8 @@ for stream in (sys.stdout, sys.stderr):
         pass
 
 from playwright.sync_api import sync_playwright  # noqa: E402
+
+from app import config  # noqa: E402
 
 
 def main() -> int:
@@ -38,10 +41,6 @@ def main() -> int:
             else None,
         )
 
-        page.goto(base_url, wait_until="domcontentloaded")
-        page.fill("#repo", repo_url)
-        page.click("#form-submit")
-
         def failed() -> bool:
             return page.locator("#dot.fail").count() > 0
 
@@ -50,9 +49,55 @@ def main() -> int:
             print(page.inner_text("#log"))
             page.screenshot(path=str(ROOT / "e2e_failure.png"), full_page=True)
 
-        # 1) 初评（同时监听错误，避免网络失败时干等 5 分钟）
+        page.goto(base_url, wait_until="domcontentloaded")
+        page.fill("#repo", repo_url)
+        page.click("#form-submit")
+
+        # 0) 支付拦截（PAYMENT_REQUIRED=True 时）
         page.wait_for_function(
-            """() => document.querySelectorAll('.judge').length === 5
+            """() => {
+                const pay = document.querySelector('#pay-box');
+                return !pay.classList.contains('hidden')
+                    || document.querySelectorAll('.judge.ready').length === 5
+                    || document.querySelector('#dot').classList.contains('fail');
+            }""",
+            timeout=60_000,
+        )
+        if failed():
+            dump_failure()
+            browser.close()
+            return 1
+
+        if not page.locator("#pay-box").is_hidden():
+            sid = page.evaluate("new URLSearchParams(location.search).get('s')")
+            print("[支付] 拦截生效，session =", sid)
+            page.click("#paid-btn")
+            if not config.ADMIN_TOKEN:
+                print("❌ 未配置 ADMIN_TOKEN")
+                browser.close()
+                return 1
+            approve_url = f"{base_url}/api/admin/approve/{sid}?token={config.ADMIN_TOKEN}"
+            for _ in range(10):
+                resp = page.request.post(approve_url)
+                if resp.ok:
+                    break
+                page.wait_for_timeout(300)
+            else:
+                print("❌ 老板放行失败")
+                browser.close()
+                return 1
+
+            # 顺手留一条老板亲签，验证报告页展示
+            page.request.post(
+                f"{base_url}/api/admin/comment/{sid}?token={config.ADMIN_TOKEN}",
+                data=json.dumps({"text": "老板亲签：演示通过，继续打磨。"}),
+                headers={"Content-Type": "application/json"},
+            )
+            print("[支付] 已标记支付并放行")
+
+        # 1) 初评（judging 阶段只有"已就位"，无分数）
+        page.wait_for_function(
+            """() => document.querySelectorAll('.judge.ready').length === 5
                      || document.querySelector('#dot').classList.contains('fail')""",
             timeout=420_000,
         )
@@ -60,7 +105,14 @@ def main() -> int:
             dump_failure()
             browser.close()
             return 1
-        print("[初评] 5 位评委已出现")
+        print("[初评] 5 位评委已就位")
+        judging_scores = page.evaluate(
+            "Array.from(document.querySelectorAll('.judge-final-score')).length"
+        )
+        if judging_scores != 0:
+            print("❌ judging 阶段出现了分数")
+            browser.close()
+            return 1
 
         # 2) 自我介绍
         page.wait_for_function(
@@ -84,7 +136,7 @@ def main() -> int:
         )
         print("[自我介绍] 已提交")
 
-        # 3) 答辩（演示模式默认 4 问；每问提交后等它关闭）
+        # 3) 答辩
         answered = 0
         for _ in range(6):
             page.wait_for_function(
@@ -116,9 +168,9 @@ def main() -> int:
             answered += 1
         print(f"[答辩] 已回答 {answered} 问")
 
-        # 4) 报告
+        # 4) 报告页
         page.wait_for_function(
-            """() => !document.querySelector('#report-box').classList.contains('hidden')
+            """() => !document.querySelector('#screen-report').classList.contains('hidden')
                      || document.querySelector('#dot').classList.contains('fail')""",
             timeout=420_000,
         )
@@ -127,9 +179,10 @@ def main() -> int:
             browser.close()
             return 1
         page.wait_for_function(
-            "document.querySelector('#phase').textContent.includes('评审完成')",
-            timeout=60_000,
+            "document.querySelector('#report-summary').textContent.includes('终评')",
+            timeout=300_000,
         )
+        owner_visible = not page.locator("#owner-comment").is_hidden()
         screenshot = ROOT / "t7_screenshot.png"
         page.screenshot(path=str(screenshot), full_page=True)
 
@@ -141,14 +194,23 @@ def main() -> int:
         print("[评委数]", page.locator(".judge").count())
         for i in range(5):
             card = page.locator(".judge").nth(i)
-            final = card.locator(".judge-final")
             print(
                 f"  - {card.locator('.judge-name').inner_text()} | "
-                f"{card.locator('.judge-score').inner_text()} | "
-                f"{final.inner_text() if final.count() else '（无终评）'}"
+                f"{card.locator('.judge-verdict').inner_text()} | "
+                f"{card.locator('.judge-final').inner_text() if card.locator('.judge-final').count() else '（无终评）'}"
             )
+        print("[老板亲签]", "显示" if owner_visible else "无")
         print("[报告]", href, "→", resp.status, len(resp.text()), "字")
         print("[截图]", screenshot)
+
+        # 5) 刷新恢复
+        page.reload(wait_until="domcontentloaded")
+        page.wait_for_function(
+            """() => !document.querySelector('#screen-report').classList.contains('hidden')
+                     && document.querySelector('#report-summary').textContent.includes('终评')""",
+            timeout=60_000,
+        )
+        print("[刷新恢复] 通过")
 
         browser.close()
 
@@ -163,7 +225,7 @@ def main() -> int:
         print("❌ 报告下载失败")
         return 1
 
-    print("✅ T16 浏览器全流程通过")
+    print("✅ D2 补丁浏览器全流程通过")
     return 0
 
 

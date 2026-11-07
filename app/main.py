@@ -1,7 +1,9 @@
-"""FastAPI 入口：创建会话 → 后台跑完整闭环 → SSE 推事件。
+"""FastAPI 入口：支付放行 → 完整闭环 → SSE 推事件。
 
-D2 闭环：
-仓库 → 解剖 → 初评 → 自我介绍 → 答辩 → 复议 → 互怼 → 亮椅 → 报告 → done
+D2 补丁：
+- P0-1 初评分数不下发，judging 只发 judge.ready；reveal 才亮终评
+- P0-2 PRD / 成品网址接入分析
+- P0-4 支付拦截 + 老板后台放行
 """
 
 from __future__ import annotations
@@ -34,12 +36,13 @@ async def lifespan(_: FastAPI):
     config.ensure_dirs()
     config.validate()
     logger.info(
-        "PitchMaster 启动，模型：%s / %s，演示模式：%s 问 / %ss / 介绍 %ss",
+        "PitchMaster 启动，模型：%s / %s，演示模式：%s 问 / %ss / 介绍 %ss，支付拦截：%s",
         config.MODEL_PRO,
         config.MODEL_FLASH,
         config.QA_MAX_QUESTIONS,
         config.QA_ANSWER_TIMEOUT_S,
         config.INTRO_TIMEOUT_S,
+        "ON" if config.PAYMENT_REQUIRED else "OFF",
     )
     yield
 
@@ -50,7 +53,6 @@ app.mount("/static", StaticFiles(directory=str(config.ROOT / "static")), name="s
 
 class CreateSessionBody(BaseModel):
     repo_url: str = Field(min_length=3)
-    # TODO(窦柘): PRD / 成品网址今晚只接收不参与评审，D2 之后接入证据包与答辩
     prd: str | None = None
     demo_url: str | None = None
 
@@ -76,11 +78,22 @@ def _get_session(session_id: str) -> state_machine.Session:
     return session
 
 
+def _start_pipeline(session: state_machine.Session) -> None:
+    if session.pipeline_started:
+        return
+    session.pipeline_started = True
+    task = asyncio.create_task(_run_pipeline(session))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+
 def _build_report_data(session: state_machine.Session) -> dict[str, Any]:
     pack = session.evidence
     return {
         "repo_url": session.repo_url,
         "evidence": pack.model_dump() if pack else {},
+        "prd_text": session.prd_text,
+        "demo_text": session.demo_text,
         "initial": [verdict.model_dump() for verdict in session.verdict_initial],
         "final": [verdict.model_dump() for verdict in session.verdict_final],
         "transcript": session.transcript,
@@ -106,7 +119,7 @@ async def _wait_with_event(
 
 async def _run_pipeline(session: state_machine.Session) -> None:
     try:
-        # ---------------------------------------------------------- D1：初评
+        # ---------------------------------------------------------- 仓库 + 材料
         await session.set_phase("loading")
         await session.emit(events.LOADING_PROGRESS, msg="正在获取仓库…")
         loaded = await asyncio.to_thread(repo_loader.load_repository, session.repo_url)
@@ -114,37 +127,53 @@ async def _run_pipeline(session: state_machine.Session) -> None:
             events.LOADING_PROGRESS,
             msg=f"已读取 {loaded['files_read']} 个文件，跳过 {loaded['files_skipped']} 个",
         )
+
+        session.prd_text = (session.prd or "").strip()[:20_000]
+        session.demo_text = ""
+        if session.demo_url:
+            await session.emit(events.LOADING_PROGRESS, msg="正在读取成品网址…")
+            session.demo_text = await asyncio.to_thread(
+                repo_loader.fetch_demo_page, session.demo_url
+            )
+            await session.emit(
+                events.LOADING_PROGRESS,
+                msg="成品网址已读取" if session.demo_text else "成品网址读取失败，按未提供处理",
+            )
+
         await session.emit(
             events.LOADING_DONE,
             files_read=loaded["files_read"],
             files_skipped=loaded["files_skipped"],
             files_total=loaded.get("files_total", 0),
             chars=len(loaded["text"]),
+            prd_provided=bool(session.prd_text),
+            demo_provided=bool(session.demo_text),
         )
 
+        # ---------------------------------------------------------- 解剖
         await session.set_phase("analyzing")
-        pack = await analyst.analyze(loaded["text"], session.repo_url)
+        pack = await analyst.analyze(
+            loaded["text"],
+            session.repo_url,
+            session.prd_text,
+            session.demo_text,
+        )
         pack.files_read = loaded["files_read"]
         pack.files_skipped = loaded["files_skipped"]
         session.evidence = pack
 
+        # ---------------------------------------------------------- 初评
         await session.set_phase("judging")
 
         async def on_thinking(judge_id: str) -> None:
             await session.emit(events.JUDGE_THINKING, judge_id=judge_id)
 
         async def on_verdict(verdict: JudgeVerdict) -> None:
+            # P0-1：judging 阶段只报"已就位"，不下发任何分数
             await session.emit(
-                events.JUDGE_INITIAL,
+                events.JUDGE_READY,
                 judge_id=verdict.judge_id,
                 name=verdict.name,
-                dimension=verdict.dimension,
-                weight=verdict.weight,
-                score=verdict.score,
-                verdict=verdict.verdict,
-                rationale=verdict.rationale,
-                questions=verdict.questions,
-                degraded=verdict.degraded,
             )
             if verdict.degraded:
                 await session.emit(
@@ -253,7 +282,6 @@ async def _run_pipeline(session: state_machine.Session) -> None:
 
             await session.emit(events.QA_END)
         else:
-            # intro 阶段点了"直接宣判"：答辩记 0 问，直接合议
             await session.emit(events.QA_START, total=0)
             await session.emit(events.QA_END)
 
@@ -280,7 +308,10 @@ async def _run_pipeline(session: state_machine.Session) -> None:
 
         transcript_text = transcript_to_text(session.transcript)
         finals = await judges.reconsider_all(
-            session.verdict_initial, transcript_text, encore_ids
+            session.verdict_initial,
+            transcript_text,
+            encore_ids,
+            demo_provided=bool(session.demo_text),
         )
         session.verdict_final = finals
 
@@ -302,6 +333,7 @@ async def _run_pipeline(session: state_machine.Session) -> None:
                 turned=turned,
                 final_score=final_score,
                 weight=item.weight,
+                reason=item.reason,
             )
 
         # ---------------------------------------------------------- 报告
@@ -319,7 +351,12 @@ async def _run_pipeline(session: state_machine.Session) -> None:
             report_text, encoding="utf-8"
         )
         session.report_ready = True
-        await session.emit(events.REPORT_READY, chars=len(report_text))
+        await session.emit(
+            events.REPORT_READY,
+            chars=len(report_text),
+            totals=score_totals(session.verdict_initial, session.verdict_final),
+            owner_comment=session.owner_comment,
+        )
 
         await session.set_phase("done")
 
@@ -336,6 +373,11 @@ async def index() -> FileResponse:
     return FileResponse(config.ROOT / "static" / "index.html")
 
 
+@app.get("/admin")
+async def admin_page() -> FileResponse:
+    return FileResponse(config.ROOT / "static" / "admin.html")
+
+
 @app.get("/api/health")
 async def health() -> dict[str, Any]:
     return {
@@ -346,11 +388,12 @@ async def health() -> dict[str, Any]:
         "qa_max_questions": config.QA_MAX_QUESTIONS,
         "qa_answer_timeout_s": config.QA_ANSWER_TIMEOUT_S,
         "intro_timeout_s": config.INTRO_TIMEOUT_S,
+        "payment_required": config.PAYMENT_REQUIRED,
     }
 
 
 @app.post("/api/sessions")
-async def create_session(body: CreateSessionBody) -> dict[str, str]:
+async def create_session(body: CreateSessionBody) -> dict[str, Any]:
     repo_url = _validate_repo_url(body.repo_url)
     session = state_machine.store.create(repo_url, body.prd, body.demo_url)
     await session.emit(
@@ -358,10 +401,75 @@ async def create_session(body: CreateSessionBody) -> dict[str, str]:
         session_id=session.id,
         repo_url=session.repo_url,
     )
-    task = asyncio.create_task(_run_pipeline(session))
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
-    return {"session_id": session.id}
+
+    if config.PAYMENT_REQUIRED:
+        await session.emit(
+            events.PAYMENT_WAITING,
+            qr_url="/static/pay_qr.png",
+        )
+        return {"session_id": session.id, "payment_required": True}
+
+    session.paid_status = "approved"
+    _start_pipeline(session)
+    return {"session_id": session.id, "payment_required": False}
+
+
+@app.post("/api/sessions/{session_id}/paid")
+async def mark_paid(session_id: str) -> dict[str, str]:
+    session = _get_session(session_id)
+    if session.paid_status == "pending":
+        return {"status": "pending"}
+    if session.paid_status != "unpaid":
+        raise HTTPException(status_code=409, detail="当前订单状态不能标记支付")
+    session.paid_status = "pending"
+    await session.emit(events.PAYMENT_PENDING)
+    return {"status": "pending"}
+
+
+def _require_admin(token: str) -> None:
+    if not config.ADMIN_TOKEN or token != config.ADMIN_TOKEN:
+        raise HTTPException(status_code=404, detail="Not Found")
+
+
+@app.get("/api/admin/orders")
+async def admin_orders(token: str = "") -> dict[str, Any]:
+    _require_admin(token)
+    orders = []
+    for session in state_machine.store.all():
+        if session.paid_status in {"unpaid", "pending"}:
+            orders.append(
+                {
+                    "id": session.id,
+                    "repo_url": session.repo_url,
+                    "paid_status": session.paid_status,
+                    "created_at": session.created_at,
+                }
+            )
+    orders.sort(key=lambda item: item["created_at"])
+    return {"orders": orders}
+
+
+@app.post("/api/admin/approve/{session_id}")
+async def admin_approve(session_id: str, token: str = "") -> dict[str, bool]:
+    _require_admin(token)
+    session = _get_session(session_id)
+    if session.paid_status == "approved" or session.pipeline_started:
+        return {"ok": True}
+    if session.paid_status != "pending":
+        raise HTTPException(status_code=409, detail="订单尚未标记支付")
+    session.paid_status = "approved"
+    await session.emit(events.PAYMENT_APPROVED)
+    _start_pipeline(session)
+    return {"ok": True}
+
+
+@app.post("/api/admin/comment/{session_id}")
+async def admin_comment(session_id: str, body: TextBody, token: str = "") -> dict[str, bool]:
+    _require_admin(token)
+    session = _get_session(session_id)
+    session.owner_comment = body.text.strip()[:500]
+    session._persist()
+    return {"ok": True}
 
 
 @app.post("/api/sessions/{session_id}/intro")
@@ -425,11 +533,8 @@ async def get_session(session_id: str) -> dict[str, Any]:
 @app.get("/api/sessions/{session_id}/events")
 async def stream_events(session_id: str, request: Request) -> StreamingResponse:
     session = _get_session(session_id)
-
-    start = 0
     last_event_id = request.headers.get("last-event-id")
-    if last_event_id and last_event_id.isdigit():
-        start = int(last_event_id) + 1
+    start = int(last_event_id) + 1 if last_event_id and last_event_id.isdigit() else 0
 
     async def generator() -> AsyncIterator[str]:
         index = start

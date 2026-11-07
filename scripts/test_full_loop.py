@@ -119,7 +119,9 @@ async def run(mode: str = "normal") -> int:
             "repo_url": repo_url,
         }
 
-    async def fake_analyze(text: str, repo_url: str) -> EvidencePack:
+    async def fake_analyze(
+        text: str, repo_url: str, prd_text: str = "", demo_text: str = ""
+    ) -> EvidencePack:
         return pack
 
     async def fake_evaluate_all(pack_, on_thinking=None, on_verdict=None):
@@ -134,7 +136,9 @@ async def run(mode: str = "normal") -> int:
         calls["reaction"] += 1
         return "回答具体，但还缺限流方案。"
 
-    async def fake_reconsider(initial_, transcript_text, encore_ids=None):
+    async def fake_reconsider(
+        initial_, transcript_text, encore_ids=None, demo_provided=True
+    ):
         calls["reconsider"] += 1
         assert "自我介绍" in transcript_text
         if mode != "skip":
@@ -184,6 +188,12 @@ async def run(mode: str = "normal") -> int:
     await asyncio.wait_for(task, timeout=30)
 
     types = [ev["type"] for ev in seen]
+    # P0-1：judging 阶段不得出现任何分数，只允许 judge.ready
+    assert events.JUDGE_READY in types
+    assert events.JUDGE_INITIAL not in types
+    reveal_at = types.index(events.REVEAL_CHAIR)
+    for ev in seen[:reveal_at]:
+        assert "score" not in ev["payload"], ev
     assert events.INTRO_REQUESTED in types
     if mode == "skip":
         assert types.count(events.QA_QUESTION) == 0

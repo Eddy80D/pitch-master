@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>老板后台 · PitchMaster</title>
+<style>
+  :root { --bg:#0a0a0c; --panel:#14141a; --line:#282832; --text:#ececf1; --muted:#8b8b99; --gold:#d9b45b; --green:#58c08a; --red:#e06a6a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
+  main { max-width:860px; margin:0 auto; padding:40px 20px 80px; }
+  h1 { font-size:24px; margin:0 0 6px; }
+  h1 span { color:var(--gold); }
+  .sub { color:var(--muted); font-size:13px; margin:0 0 24px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:12px; }
+  .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .repo { font-family:ui-monospace,Consolas,monospace; font-size:13px; word-break:break-all; }
+  .id { color:var(--muted); font-size:11px; font-family:ui-monospace,Consolas,monospace; }
+  .badge { margin-left:auto; font-size:11px; padding:2px 8px; border-radius:999px; font-family:ui-monospace,Consolas,monospace; }
+  .badge.pending { color:var(--gold); background:rgba(217,180,91,.12); }
+  .badge.unpaid { color:var(--muted); background:#1b1b23; }
+  button { background:var(--gold); color:#17140b; border:0; border-radius:8px; padding:8px 16px; font-weight:700; cursor:pointer; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  textarea { width:100%; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:10px; min-height:56px; font-family:inherit; resize:vertical; }
+  .actions { display:flex; gap:8px; margin-top:8px; align-items:center; }
+  .hint { color:var(--muted); font-size:12px; }
+  .empty { color:var(--muted); text-align:center; padding:40px; border:1px dashed var(--line); border-radius:12px; }
+  #token-bar { display:flex; gap:8px; margin-bottom:20px; }
+  #token-bar input { flex:1; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px; }
+  .error { color:var(--red); font-size:13px; margin-top:8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>老板<span>后台</span></h1>
+  <p class="sub">待放行订单 · 手动放行后评审才会开始。每 3 秒自动刷新。</p>
+
+  <div id="token-bar">
+    <input id="token" placeholder="ADMIN_TOKEN">
+    <button id="save-token" type="button">确定</button>
+  </div>
+
+  <div id="orders"></div>
+</main>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const params = new URLSearchParams(location.search);
+  let token = params.get("token") || "";
+
+  $("#token").value = token;
+
+  $("#save-token").addEventListener("click", () => {
+    token = $("#token").value.trim();
+    history.replaceState(null, "", `?token=${encodeURIComponent(token)}`);
+    load();
+  });
+
+  function el(tag, cls, text) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  async function api(path, options) {
+    const sep = path.includes("?") ? "&" : "?";
+    const resp = await fetch(`${path}${sep}token=${encodeURIComponent(token)}`, options);
+    if (!resp.ok) throw new Error(resp.status === 404 ? "Token 错误或后台未启用" : `HTTP ${resp.status}`);
+    return resp.json();
+  }
+
+  async function approve(id) {
+    try {
+      await api(`/api/admin/approve/${id}`, { method: "POST" });
+      load();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function saveComment(id, text) {
+    try {
+      await api(`/api/admin/comment/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      alert("评语已保存");
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function load() {
+    const box = $("#orders");
+    if (!token) {
+      box.replaceChildren(el("div", "empty", "请先填写 ADMIN_TOKEN"));
+      return;
+    }
+    try {
+      const data = await api("/api/admin/orders");
+      const orders = data.orders || [];
+      if (!orders.length) {
+        box.replaceChildren(el("div", "empty", "暂无待放行订单"));
+        return;
+      }
+      box.replaceChildren(...orders.map((order) => {
+        const card = el("div", "card");
+        const row = el("div", "row");
+        row.append(
+          el("span", "repo", order.repo_url),
+          el("span", "id", order.id),
+          el("span", `badge ${order.paid_status}`,
+             order.paid_status === "pending" ? "待放行" : "未支付")
+        );
+        const approveBtn = el("button", "", "放行");
+        approveBtn.disabled = order.paid_status !== "pending";
+        approveBtn.addEventListener("click", () => approve(order.id));
+        row.append(approveBtn);
+
+        const comment = el("textarea");
+        comment.placeholder = "老板亲签评语（可选，会显示在报告页顶部）";
+        const saveBtn = el("button", "", "保存评语");
+        saveBtn.addEventListener("click", () => saveComment(order.id, comment.value));
+        const actions = el("div", "actions");
+        actions.append(saveBtn, el("span", "hint", "放行后评语仍可补写"));
+
+        card.append(row, comment, actions);
+        return card;
+      }));
+    } catch (err) {
+      box.replaceChildren(el("div", "empty error", err.message));
+    }
+  }
+
+  load();
+  setInterval(load, 3000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+"""D2 补丁自测：P0-1 隐私 / P0-2 PRD 与成品 / P0-4 支付与老板后台。
+
+不调真实 API。
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+for stream in (sys.stdout, sys.stderr):
+    try:
+        stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
+from fastapi import HTTPException  # noqa: E402
+
+from app import config, main, state_machine  # noqa: E402
+from app.agents import judges  # noqa: E402
+from app.repo_loader import _VisibleTextParser, _is_private_host  # noqa: E402
+from app.schemas import EvidencePack  # noqa: E402
+
+
+def test_demo_html_parser() -> None:
+    parser = _VisibleTextParser()
+    parser.feed(
+        "<html><head><title>HEAD_ONLY</title></head><body>"
+        "<h1>可见标题</h1><script>alert(1)</script><p>正文内容</p>"
+        "<style>.x{color:red}</style></body></html>"
+    )
+    text = " ".join(parser.parts)
+    assert "可见标题" in text and "正文内容" in text
+    assert "alert" not in text and "color:red" not in text and "HEAD_ONLY" not in text
+    assert _is_private_host("127.0.0.1")
+    assert _is_private_host("localhost")
+    assert _is_private_host("192.168.1.5")
+    assert not _is_private_host("example.com")
+    print("✅ P0-2 HTML 可见文本提取 / 内网地址拦截")
+
+
+async def test_tech_cap() -> None:
+    async def fake_chat(caller, model, messages, **kwargs):
+        return json.dumps(
+            {
+                "score": 25,
+                "verdict": "turn",
+                "rationale": "mock",
+                "questions": [],
+            }
+        )
+
+    original = judges.mimo_client.chat
+    judges.mimo_client.chat = fake_chat
+    try:
+        judge = judges.judge_map()["tech"]
+        no_demo = EvidencePack(repo_url="https://github.com/a/b", demo_provided=False)
+        verdict = await judges._evaluate_one(judge, no_demo)
+        assert verdict.score <= 15, verdict.score
+        assert verdict.verdict == "hold", verdict.verdict
+
+        with_demo = EvidencePack(repo_url="https://github.com/a/b", demo_provided=True)
+        verdict2 = await judges._evaluate_one(judge, with_demo)
+        assert verdict2.score == 25, verdict2.score
+    finally:
+        judges.mimo_client.chat = original
+    print("✅ P0-2 无成品网址时 tech 分数上限 15，有成品时正常")
+
+
+async def wait_done(session: state_machine.Session, timeout: float = 3.0) -> None:
+    deadline = asyncio.get_running_loop().time() + timeout
+    while asyncio.get_running_loop().time() < deadline:
+        if session.phase == "done":
+            return
+        await asyncio.sleep(0.01)
+    raise AssertionError(f"会话未在 {timeout}s 内完成，phase={session.phase}")
+
+
+async def test_payment_and_admin() -> None:
+    original_pipeline = main._run_pipeline
+    original_required = config.PAYMENT_REQUIRED
+    original_token = config.ADMIN_TOKEN
+
+    async def fake_pipeline(session):
+        await session.set_phase("loading")
+        await session.set_phase("done")
+        await session.close()
+
+    main._run_pipeline = fake_pipeline
+    config.PAYMENT_REQUIRED = True
+    config.ADMIN_TOKEN = "test-token"
+    state_machine.store._sessions.clear()
+
+    try:
+        result = await main.create_session(
+            main.CreateSessionBody(repo_url="https://github.com/demo/demo")
+        )
+        session_id = result["session_id"]
+        session = state_machine.store.get(session_id)
+        assert result["payment_required"] is True
+        assert session.pipeline_started is False
+        assert session.paid_status == "unpaid"
+        assert any(ev["type"] == "payment.waiting" for ev in session.events)
+
+        # 错 token 一律 404
+        try:
+            await main.admin_orders(token="wrong")
+        except HTTPException as exc:
+            assert exc.status_code == 404
+        else:
+            raise AssertionError("错 token 未返回 404")
+
+        await main.mark_paid(session_id)
+        assert session.paid_status == "pending"
+        orders = await main.admin_orders(token="test-token")
+        assert any(item["id"] == session_id for item in orders["orders"])
+
+        try:
+            await main.admin_approve(session_id, token="wrong")
+        except HTTPException as exc:
+            assert exc.status_code == 404
+        else:
+            raise AssertionError("错 token 放行未返回 404")
+
+        await main.admin_approve(session_id, token="test-token")
+        assert session.paid_status == "approved"
+        await wait_done(session)
+
+        try:
+            await main.admin_comment(session_id, main.TextBody(text="不错"), token="wrong")
+        except HTTPException as exc:
+            assert exc.status_code == 404
+        else:
+            raise AssertionError("错 token 评语未返回 404")
+
+        await main.admin_comment(session_id, main.TextBody(text="老板亲签：继续打磨。"), token="test-token")
+        assert session.owner_comment == "老板亲签：继续打磨。"
+        print("✅ P0-4 支付拦截 / admin 404 / 放行启动 / 评语保存")
+
+        # PAYMENT_REQUIRED=False 直接启动
+        config.PAYMENT_REQUIRED = False
+        result2 = await main.create_session(
+            main.CreateSessionBody(repo_url="https://github.com/demo/demo2")
+        )
+        assert result2["payment_required"] is False
+        session2 = state_machine.store.get(result2["session_id"])
+        await wait_done(session2)
+        print("✅ P0-4 PAYMENT_REQUIRED=False 跳过收款直接启动")
+    finally:
+        main._run_pipeline = original_pipeline
+        config.PAYMENT_REQUIRED = original_required
+        config.ADMIN_TOKEN = original_token
+
+
+async def main_test() -> int:
+    test_demo_html_parser()
+    await test_tech_cap()
+    await test_payment_and_admin()
+    print("✅ D2 补丁自测全部通过")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(asyncio.run(main_test()))

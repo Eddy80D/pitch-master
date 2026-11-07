@@ -12,9 +12,15 @@ SESSION_CREATED = "session.created"
 LOADING_PROGRESS = "loading.progress"
 LOADING_DONE = "loading.done"
 JUDGE_THINKING = "judge.thinking"
-JUDGE_INITIAL = "judge.initial"
+JUDGE_READY = "judge.ready"
+JUDGE_INITIAL = "judge.initial"  # 仅保留常量；judging 阶段不再下发
 PHASE_CHANGED = "phase.changed"
 ERROR = "error"
+
+# —— 支付 / 老板后台 ——
+PAYMENT_WAITING = "payment.waiting"
+PAYMENT_PENDING = "payment.pending"
+PAYMENT_APPROVED = "payment.approved"
 
 # —— D2 闭环 ——
 INTRO_REQUESTED = "intro.requested"
@@ -35,9 +41,13 @@ ALL_TYPES = (
     LOADING_PROGRESS,
     LOADING_DONE,
     JUDGE_THINKING,
+    JUDGE_READY,
     JUDGE_INITIAL,
     PHASE_CHANGED,
     ERROR,
+    PAYMENT_WAITING,
+    PAYMENT_PENDING,
+    PAYMENT_APPROVED,
     INTRO_REQUESTED,
     INTRO_DONE,
     QA_START,

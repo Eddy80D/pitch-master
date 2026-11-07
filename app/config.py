@@ -36,6 +36,16 @@ INTERJECTION_ENABLED: bool = os.getenv("INTERJECTION_ENABLED", "False").lower() 
 }
 REPORT_MODEL: str = os.getenv("REPORT_MODEL", MODEL_PRO)
 
+# —— 支付 / 老板后台（P0-4）——
+# PAYMENT_REQUIRED=False 时跳过收款直接跑，供开发与评审演示
+PAYMENT_REQUIRED: bool = os.getenv("PAYMENT_REQUIRED", "True").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+# 为空则 admin 接口全部 404
+ADMIN_TOKEN: str = os.getenv("ADMIN_TOKEN", "")
+
 LOG_DIR: Path = _path_env("LOG_DIR", ROOT / "logs")
 USAGE_FILE: Path = LOG_DIR / "usage.jsonl"
 SESSIONS_DIR: Path = LOG_DIR / "sessions"
