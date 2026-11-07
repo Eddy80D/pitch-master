@@ -814,8 +814,11 @@
     hide(payBox);
     const total = payload.files_read ?? 0;
     const suspicious = payload.suspicious_count ?? 0;
+    const last = payload.last_score != null
+      ? `上次 ${payload.last_score} 分，这次目标更高。\n`
+      : "";
     const welcome = payload.welcome_back
-      ? `欢迎回来，${payload.user_name}！这是你第 ${payload.session_count} 次登台。\n`
+      ? `欢迎回来，${payload.user_name}！这是你第 ${payload.session_count} 次登台。\n${last}`
       : "";
     $("#precheck-text").textContent = welcome + (suspicious > 0
       ? `已读取 ${total} 个文件，发现 ${suspicious} 处值得评委深挖的疑点……付费 ¥${payload.price ?? 19.9}，让五位评委告诉你它们是什么。`
@@ -1055,6 +1058,7 @@
             user_name: snap.user_name || "",
             session_count: snap.user_session_count || 0,
             welcome_back: (snap.user_session_count || 0) > 1,
+            last_score: snap.last_score,
           });
           if (snap.paid_status === "unpaid") {
             show(payBox);
@@ -1483,7 +1487,15 @@
       const data = await response.json();
       sessionId = id;
       $("#report-link").href = `/api/sessions/${id}/report`;
-      renderWebReport(data);
+      try {
+        renderWebReport(data);
+      } catch (renderError) {
+        box.replaceChildren(el("div", "hint", "网页版报告渲染失败，请使用上方下载按钮。"));
+        const raw = document.createElement("pre");
+        raw.className = "md-content";
+        raw.textContent = data.markdown || "";
+        box.append(raw);
+      }
     } catch (err) {
       box.replaceChildren(el("div", "hint", "网页版报告加载失败，请使用上方下载按钮。"));
     }

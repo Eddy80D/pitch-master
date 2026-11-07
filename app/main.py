@@ -173,6 +173,7 @@ async def _run_precheck(session: state_machine.Session) -> None:
         user_name=session.user_name,
         session_count=session.user_session_count,
         welcome_back=session.user_session_count > 1,
+        last_score=session.last_score,
     )
 
     if config.PAYMENT_REQUIRED:
@@ -214,6 +215,27 @@ def _build_report_data(session: state_machine.Session) -> dict[str, Any]:
         "bicker": session.bicker,
         "totals": score_totals(session.verdict_initial, session.verdict_final),
     }
+
+
+def _latest_user_score(user: users.User) -> float | None:
+    best_score: float | None = None
+    best_ts = -1.0
+    for order in orders.store.all():
+        if order.is_test or order.status != "done":
+            continue
+        if not (
+            order.user_id == user.user_id
+            or (not order.user_id and order.user_name == user.name)
+        ):
+            continue
+        score = (order.totals or {}).get("final")
+        if score is None:
+            continue
+        ts = order.done_at or order.created_at
+        if ts >= best_ts:
+            best_ts = ts
+            best_score = float(score)
+    return best_score
 
 
 def _load_session_data(session_id: str) -> dict[str, Any] | None:
@@ -638,6 +660,7 @@ async def create_session(
     session.user_id = user.user_id
     session.user_name = user.name
     session.user_session_count = user.session_count
+    session.last_score = _latest_user_score(user)
     orders.store.create(
         session.id,
         repo_url,
@@ -666,6 +689,7 @@ async def create_session(
             "user_name": user.name,
             "session_count": user.session_count,
             "welcome_back": not is_new,
+            "last_score": session.last_score,
         }
 
     if config.PAYMENT_REQUIRED:
@@ -682,6 +706,7 @@ async def create_session(
             "user_name": user.name,
             "session_count": user.session_count,
             "welcome_back": not is_new,
+            "last_score": session.last_score,
         }
 
     session.paid_status = "approved"
@@ -694,6 +719,7 @@ async def create_session(
         "user_name": user.name,
         "session_count": user.session_count,
         "welcome_back": not is_new,
+        "last_score": session.last_score,
     }
 
 

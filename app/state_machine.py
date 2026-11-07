@@ -76,6 +76,7 @@ class Session:
         self.user_id: str = ""
         self.user_name: str = ""
         self.user_session_count: int = 0
+        self.last_score: float | None = None
 
         # P0-4：支付与老板后台
         self.paid_status = "unpaid"  # unpaid → pending → approved
@@ -234,6 +235,7 @@ class Session:
             price=self.price,
             user_name=self.user_name,
             user_session_count=self.user_session_count,
+            last_score=self.last_score,
             totals=(
                 score_totals(self.verdict_initial, self.verdict_final)
                 if self.verdict_final

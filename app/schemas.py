@@ -182,6 +182,7 @@ class SessionState(BaseModel):
     price: float = 0.0
     user_name: str = ""
     user_session_count: int = 0
+    last_score: float | None = None
     totals: dict[str, Any] = Field(default_factory=dict)
     error: dict[str, Any] | None = None
     created_at: float = 0.0
