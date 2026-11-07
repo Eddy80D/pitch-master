@@ -5,69 +5,122 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
 <title>老板后台 · PitchMaster</title>
-<style>
-  :root { --bg:#0a0a0c; --panel:#14141a; --line:#282832; --text:#ececf1; --muted:#8b8b99; --gold:#d9b45b; --green:#58c08a; --red:#e06a6a; --blue:#6a9fe0; }
+<style>  :root {
+    --bg: #F5F4F1;
+    --surface: #FFFFFF;
+    --surface-2: #FAF9F6;
+    --ink: #1A1A2E;
+    --ink-2: #5A5B6E;
+    --line: #E6E3DD;
+    --blue: #3B6FE0;
+    --blue-deep: #2B56B8;
+    --pink: #E75A9C;
+    --pink-soft: #FBD9E9;
+    --green: #3D9B6A;
+    --red: #D95050;
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(26,26,46,.06), 0 4px 14px rgba(26,26,46,.05);
+    --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  }
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
-  main { max-width:1040px; margin:0 auto; padding:36px 20px 80px; }
-  h1 { font-size:24px; margin:0 0 6px; }
-  h1 span { color:var(--gold); }
-  .sub { color:var(--muted); font-size:13px; margin:0 0 20px; }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:12px; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
+  main { max-width:1060px; margin:0 auto; padding:40px 20px 80px; }
+  h1 { font-size:24px; margin:0 0 6px; color:var(--ink); }
+  h1 span { color:var(--blue); }
+  .sub { color:var(--ink-2); font-size:13px; margin:0 0 22px; }
+
+  .section { margin-bottom:22px; }
+  .section-head {
+    color:var(--ink-2);
+    font-size:14px;
+    letter-spacing:2px;
+    margin:0 0 10px 2px;
+  }
+  .panel {
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+    box-shadow:var(--shadow);
+  }
+  .card {
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:10px;
+    box-shadow:var(--shadow);
+  }
   .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-  .repo { font-family:ui-monospace,Consolas,monospace; font-size:13px; word-break:break-all; }
-  .id { color:var(--muted); font-size:11px; font-family:ui-monospace,Consolas,monospace; }
-  .badge { font-size:11px; padding:2px 8px; border-radius:999px; font-family:ui-monospace,Consolas,monospace; }
-  .badge.unpaid { color:var(--muted); background:#1b1b23; }
-  .badge.pending { color:var(--gold); background:rgba(217,180,91,.12); }
-  .badge.approved,.badge.running { color:var(--blue); background:rgba(106,159,224,.12); }
-  .badge.done { color:var(--green); background:rgba(88,192,138,.12); }
-  .badge.failed,.badge.reworked { color:var(--red); background:rgba(224,106,106,.12); }
-  .badge.test { color:var(--muted); background:#1b1b23; }
-  .badge.verify { color:var(--gold); background:rgba(217,180,91,.12); }
-  .badge.evaded { color:var(--red); background:rgba(224,106,106,.12); }
-  .tabs { display:flex; gap:8px; margin-bottom:12px; }
-  .tabs button { background:transparent; color:var(--muted); border:1px solid var(--line); }
-  .tabs button.active { color:#17140b; background:var(--gold); border-color:var(--gold); }
-  button { background:var(--gold); color:#17140b; border:0; border-radius:8px; padding:8px 14px; font-weight:700; cursor:pointer; }
-  button.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); font-weight:500; }
-  button.danger { background:var(--red); color:#1a0b0b; }
+  .repo { font-family:var(--mono); font-size:13px; word-break:break-all; color:var(--ink); }
+  .id { color:var(--ink-2); font-size:11px; font-family:var(--mono); }
+  .badge { font-size:11px; padding:2px 8px; border-radius:999px; font-family:var(--mono); }
+  .badge.unpaid { color:var(--ink-2); background:#F1EFEA; }
+  .badge.pending { color:var(--blue); background:rgba(59,111,224,.10); }
+  .badge.approved,.badge.running { color:var(--blue); background:rgba(59,111,224,.10); }
+  .badge.done { color:var(--green); background:rgba(61,155,106,.12); }
+  .badge.failed,.badge.reworked { color:var(--red); background:rgba(217,80,80,.10); }
+  .badge.test { color:var(--ink-2); background:#F1EFEA; }
+  .badge.verify { color:var(--pink); background:var(--pink-soft); }
+  .badge.evaded { color:var(--red); background:rgba(217,80,80,.10); }
+
+  button { background:var(--blue); color:#fff; border:0; border-radius:8px; padding:8px 14px; font-weight:700; cursor:pointer; transition:background .15s; }
+  button:hover { background:var(--blue-deep); }
+  button.ghost { background:transparent; color:var(--ink-2); border:1px solid var(--line); font-weight:500; }
+  button.ghost:hover { color:var(--ink); background:var(--surface-2); }
+  button.danger { background:var(--red); color:#fff; }
   button:disabled { opacity:.4; cursor:not-allowed; }
-  input, textarea { background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:9px 10px; font-family:inherit; }
+  input, textarea { background:var(--surface-2); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:9px 10px; font-family:inherit; }
+  input:focus, textarea:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(59,111,224,.12); }
   textarea { width:100%; min-height:56px; resize:vertical; }
-  .hint { color:var(--muted); font-size:12px; }
-  .empty { color:var(--muted); text-align:center; padding:40px; border:1px dashed var(--line); border-radius:12px; }
+  .hint { color:var(--ink-2); font-size:12px; }
+  .empty { color:var(--ink-2); text-align:center; padding:40px; border:1px dashed var(--line); border-radius:12px; background:var(--surface-2); }
   .error { color:var(--red); font-size:13px; margin-top:8px; }
-  #token-bar { display:flex; gap:8px; margin-bottom:20px; }
+  #token-bar { display:flex; gap:8px; margin-bottom:22px; }
   #token-bar input { flex:1; }
 
   .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; }
-  .tile { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; }
-  .tile .k { color:var(--muted); font-size:11px; }
-  .tile .v { font-size:22px; font-family:ui-monospace,Consolas,monospace; margin-top:4px; }
+  .tile { background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .tile .k { color:var(--ink-2); font-size:11px; }
+  .tile .v { font-size:22px; font-family:var(--mono); margin-top:4px; color:var(--ink); }
   .charts { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
-  .chart-box { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px; }
-  .chart-title { color:var(--muted); font-size:11px; margin-bottom:4px; }
+  .chart-box { background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:10px; }
+  .chart-title { color:var(--ink-2); font-size:11px; margin-bottom:4px; letter-spacing:.5px; }
   svg { width:100%; height:130px; display:block; }
 
-  .order-time { color:var(--muted); font-size:11px; font-family:ui-monospace,Consolas,monospace; }
+  .order-time { color:var(--ink-2); font-size:11px; font-family:var(--mono); }
   .order-repo { flex:1; min-width:220px; }
-  .flag { color:var(--gold); font-size:12px; }
+  .flag { color:var(--pink); font-size:12px; }
 
-  #drawer { position:fixed; inset:0; background:rgba(0,0,0,.65); display:flex; justify-content:flex-end; z-index:10; }
+  .tabs { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .tabs button { background:transparent; color:var(--ink-2); border:1px solid var(--line); }
+  .tabs button:hover { background:var(--surface-2); }
+  .tabs button.active { color:#fff; background:var(--blue); border-color:var(--blue); }
+
+  #drawer { position:fixed; inset:0; background:rgba(26,26,46,.32); display:flex; justify-content:flex-end; z-index:10; }
   #drawer.hidden { display:none; }
-  .drawer-panel { width:min(680px,100%); height:100%; overflow-y:auto; background:var(--panel); border-left:1px solid var(--line); padding:22px; }
+  .drawer-panel { width:min(680px,100%); height:100%; overflow-y:auto; background:var(--surface); border-left:1px solid var(--line); padding:22px; box-shadow:-8px 0 30px rgba(26,26,46,.12); }
   .drawer-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-  .drawer-head h2 { font-size:18px; margin:0; }
-  .kv { color:var(--muted); font-size:12px; line-height:1.9; }
-  .transcript { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; font-size:13px; line-height:1.7; }
-  .transcript .who { color:var(--gold); }
-  .transcript .ans { color:#c9c9d2; margin-bottom:8px; }
-  .transcript .react { color:var(--muted); font-size:12px; margin-bottom:12px; }
+  .drawer-head h2 { font-size:18px; margin:0; color:var(--ink); }
+  .kv { color:var(--ink-2); font-size:12px; line-height:1.9; }
+  .transcript { background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:12px; font-size:13px; line-height:1.7; }
+  .transcript .who { color:var(--blue); font-weight:600; }
+  .transcript .ans { color:var(--ink); margin-bottom:8px; }
+  .transcript .react { color:var(--ink-2); font-size:12px; margin-bottom:12px; }
   table { width:100%; border-collapse:collapse; font-size:12px; margin:8px 0 16px; }
   th,td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
-  th { color:var(--muted); font-weight:500; }
-  @media (max-width:720px) { .charts { grid-template-columns:1fr; } }
+  th { color:var(--ink-2); font-weight:500; }
+  td { color:var(--ink); }
+  #verify-reminder { margin:10px 0; color:var(--pink); font-size:12px; }
+  @media (max-width:720px) {
+    .charts { grid-template-columns:1fr; }
+    main { padding:28px 14px 60px; }
+    .order-repo { min-width:0; width:100%; }
+  }
+  @media (max-width:440px) {
+    .tiles { grid-template-columns:1fr 1fr; }
+    .panel { padding:12px; }
+  }
 </style>
 </head>
 <body>
@@ -80,36 +133,57 @@
     <button id="save-token" type="button">确定</button>
   </div>
 
-  <section id="dashboard" class="card hidden">
-    <div id="tiles" class="tiles"></div>
-    <div class="charts">
-      <div class="chart-box">
-        <div class="chart-title">近 12 小时成交单数</div>
-        <svg id="bar-chart" viewBox="0 0 520 130" preserveAspectRatio="none"></svg>
-      </div>
-      <div class="chart-box">
-        <div class="chart-title">累计营业额（元）</div>
-        <svg id="line-chart" viewBox="0 0 520 130" preserveAspectRatio="none"></svg>
-      </div>
-      <div class="chart-box">
-        <div class="chart-title">成本 vs 收入</div>
-        <svg id="cost-chart" viewBox="0 0 520 130" preserveAspectRatio="none"></svg>
+  <section id="revenue-section" class="section hidden">
+    <div class="section-head">营收概览</div>
+    <div class="panel">
+      <div id="tiles-revenue" class="tiles"></div>
+      <div class="charts">
+        <div class="chart-box">
+          <div class="chart-title">近 12 小时成交单数</div>
+          <svg id="bar-chart" viewBox="0 0 520 130" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">累计营业额（元）</div>
+          <svg id="line-chart" viewBox="0 0 520 130" preserveAspectRatio="none"></svg>
+        </div>
       </div>
     </div>
   </section>
 
-  <section id="users" class="card hidden">
-    <div class="chart-title">注册用户（加分材料 #7）</div>
-    <div id="users-table"></div>
+  <section id="cost-section" class="section hidden">
+    <div class="section-head">成本分析</div>
+    <div class="panel">
+      <div id="tiles-cost" class="tiles"></div>
+      <div class="charts">
+        <div class="chart-box">
+          <div class="chart-title">成本 vs 收入</div>
+          <svg id="cost-chart" viewBox="0 0 520 130" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+    </div>
   </section>
 
-  <div id="tabs" class="tabs">
-    <button type="button" data-filter="all" class="active">全部</button>
-    <button type="button" data-filter="unverified">待核验</button>
-    <button type="button" data-filter="test">测试单</button>
-  </div>
+  <section id="orders-section" class="section hidden">
+    <div class="section-head">订单管理</div>
+    <div class="panel">
+      <div id="tabs" class="tabs">
+        <button type="button" data-filter="all" class="active">全部</button>
+        <button type="button" data-filter="unverified">待核验</button>
+        <button type="button" data-filter="test">测试单</button>
+      </div>
+      <div id="orders"></div>
+    </div>
+  </section>
 
-  <div id="orders"></div>
+  <section id="users-section" class="section hidden">
+    <div class="section-head">用户与质检</div>
+    <div class="panel">
+      <div id="tiles-quality" class="tiles"></div>
+      <div id="verify-reminder"></div>
+      <div class="chart-title" style="margin-top:12px">注册用户（加分材料 #7）</div>
+      <div id="users-table"></div>
+    </div>
+  </section>
 </main>
 
 <div id="drawer" class="hidden">
@@ -186,14 +260,14 @@
     const W = 520, H = 130, padL = 24, padB = 20, padT = 8;
     const max = Math.max(1, ...data.map((d) => d.count));
     const bw = (W - padL - 8) / data.length;
-    const parts = [`<line x1="${padL}" y1="${H - padB}" x2="${W - 4}" y2="${H - padB}" stroke="#282832"/>`];
+    const parts = [`<line x1="${padL}" y1="${H - padB}" x2="${W - 4}" y2="${H - padB}" stroke="#E6E3DD"/>`];
     data.forEach((d, i) => {
       const h = (d.count / max) * (H - padB - padT);
       const x = padL + i * bw + bw * 0.2;
       const y = H - padB - h;
-      parts.push(`<rect x="${x}" y="${y}" width="${bw * 0.6}" height="${h}" fill="${d.count ? "#d9b45b" : "#22222b"}"/>`);
-      if (i % 2 === 0) parts.push(`<text x="${x + bw * 0.3}" y="${H - 6}" fill="#8b8b99" font-size="9" text-anchor="middle">${d.hour}</text>`);
-      if (d.count) parts.push(`<text x="${x + bw * 0.3}" y="${Math.max(10, y - 3)}" fill="#ececf1" font-size="9" text-anchor="middle">${d.count}</text>`);
+      parts.push(`<rect x="${x}" y="${y}" width="${bw * 0.6}" height="${h}" fill="${d.count ? "#3B6FE0" : "#ECE9E2"}"/>`);
+      if (i % 2 === 0) parts.push(`<text x="${x + bw * 0.3}" y="${H - 6}" fill="#9A9BAA" font-size="9" text-anchor="middle">${d.hour}</text>`);
+      if (d.count) parts.push(`<text x="${x + bw * 0.3}" y="${Math.max(10, y - 3)}" fill="#1A1A2E" font-size="9" text-anchor="middle">${d.count}</text>`);
     });
     svg.innerHTML = parts.join("");
   }
@@ -209,7 +283,7 @@
     const svg = $("#cost-chart");
     const known = cost && cost.cost_known;
     if (!known) {
-      svg.innerHTML = `<text x="260" y="65" fill="#8b8b99" font-size="11" text-anchor="middle">待官方价目确认（仅统计 token）</text>`;
+      svg.innerHTML = `<text x="260" y="65" fill="#9A9BAA" font-size="11" text-anchor="middle">待官方价目确认（仅统计 token）</text>`;
       return;
     }
     const W = 520, H = 130, padL = 40, padB = 24, padT = 12;
@@ -217,19 +291,19 @@
     const max = Math.max(1, ...values);
     const barH = (H - padB - padT) * 0.65;
     const barW = 90;
-    const parts = [`<line x1="${padL}" y1="${H - padB}" x2="${W - 10}" y2="${H - padB}" stroke="#282832"/>`];
+    const parts = [`<line x1="${padL}" y1="${H - padB}" x2="${W - 10}" y2="${H - padB}" stroke="#E6E3DD"/>`];
     ["收入", "模型成本"].forEach((label, index) => {
       const value = values[index];
       const h = (value / max) * barH;
       const x = 140 + index * 180;
       const y = H - padB - h;
-      const color = index === 0 ? "#58c08a" : "#e06a6a";
+      const color = index === 0 ? "#3D9B6A" : "#D95050";
       parts.push(`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}"/>`);
-      parts.push(`<text x="${x + barW / 2}" y="${y - 4}" fill="#ececf1" font-size="10" text-anchor="middle">¥${value.toFixed(2)}</text>`);
-      parts.push(`<text x="${x + barW / 2}" y="${H - 8}" fill="#8b8b99" font-size="10" text-anchor="middle">${label}</text>`);
+      parts.push(`<text x="${x + barW / 2}" y="${y - 4}" fill="#1A1A2E" font-size="10" text-anchor="middle">¥${value.toFixed(2)}</text>`);
+      parts.push(`<text x="${x + barW / 2}" y="${H - 8}" fill="#9A9BAA" font-size="10" text-anchor="middle">${label}</text>`);
     });
     if (cost.gross_margin !== null && cost.gross_margin !== undefined) {
-      parts.push(`<text x="${W - 10}" y="${padT + 4}" fill="#8b8b99" font-size="10" text-anchor="end">毛利率 ${(cost.gross_margin * 100).toFixed(1)}%</text>`);
+      parts.push(`<text x="${W - 10}" y="${padT + 4}" fill="#9A9BAA" font-size="10" text-anchor="end">毛利率 ${(cost.gross_margin * 100).toFixed(1)}%</text>`);
     }
     svg.innerHTML = parts.join("");
   }
@@ -246,42 +320,61 @@
       return `${x},${y}`;
     });
     const parts = [
-      `<line x1="${padL}" y1="${H - padB}" x2="${W - 4}" y2="${H - padB}" stroke="#282832"/>`,
-      `<polyline points="${points.join(" ")}" fill="none" stroke="#58c08a" stroke-width="2"/>`,
+      `<line x1="${padL}" y1="${H - padB}" x2="${W - 4}" y2="${H - padB}" stroke="#E6E3DD"/>`,
+      `<polyline points="${points.join(" ")}" fill="none" stroke="#E75A9C" stroke-width="2"/>`,
     ];
     data.forEach((d, i) => {
-      if (i % 2 === 0) parts.push(`<text x="${padL + i * step}" y="${H - 6}" fill="#8b8b99" font-size="9" text-anchor="middle">${d.hour}</text>`);
+      if (i % 2 === 0) parts.push(`<text x="${padL + i * step}" y="${H - 6}" fill="#9A9BAA" font-size="9" text-anchor="middle">${d.hour}</text>`);
     });
-    parts.push(`<text x="${padL}" y="${padT}" fill="#8b8b99" font-size="9">峰值 ${max.toFixed(0)} 元</text>`);
+    parts.push(`<text x="${padL}" y="${padT}" fill="#9A9BAA" font-size="9">峰值 ${max.toFixed(0)} 元</text>`);
     svg.innerHTML = parts.join("");
   }
 
-  function renderStats(stats) {
-    const tiles = [
-      ["今日成交", `${stats.today_count} 单`],
-      ["今日营业额", `¥${stats.today_revenue}`],
-      ["累计成交", `${stats.total_count} 单`],
-      ["累计营业额", `¥${stats.total_revenue}`],
-      ["待放行", `${stats.pending_count} 单`],
-      ["待核验", `${stats.unverified_count ?? 0} 单`],
-      ["逃单", `${stats.evaded_count ?? 0} 单`],
-      ["重审单", `${stats.rework_count} 单`],
-      ["建议抽检", `${stats.suggested_count} 单`],
-      ["测试单", `${stats.test_count ?? 0} 单`],
-      ["注册用户", `${stats.user_count ?? 0} 人`],
-      ["今日消耗", fmtTokens(stats.cost?.today_tokens)],
-      ["本月消耗", fmtTokens(stats.cost?.month_tokens)],
-      ["历史累计", fmtTokens(stats.cost?.total_tokens)],
-      ["单均消耗", fmtTokens(stats.cost?.avg_tokens_per_order)],
-    ];
-    $("#tiles").replaceChildren(...tiles.map(([k, v]) => {
+  function renderTiles(target, items) {
+    target.replaceChildren(...items.map(([k, v]) => {
       const tile = el("div", "tile");
       tile.append(el("div", "k", k), el("div", "v", v));
       return tile;
     }));
+  }
+
+  function renderStats(stats) {
+    const cost = stats.cost || {};
+    const margin = cost.gross_margin !== null && cost.gross_margin !== undefined
+      ? `${(Number(cost.gross_margin) * 100).toFixed(1)}%`
+      : "待价目";
+
+    renderTiles($("#tiles-revenue"), [
+      ["今日成交", `${stats.today_count} 单`],
+      ["今日营业额", `¥${stats.today_revenue}`],
+      ["累计成交", `${stats.total_count} 单`],
+      ["累计营业额", `¥${stats.total_revenue}`],
+      ["毛利率", margin],
+    ]);
+    renderTiles($("#tiles-cost"), [
+      ["今日 token", fmtTokens(cost.today_tokens)],
+      ["本月 token", fmtTokens(cost.month_tokens)],
+      ["累计 token", fmtTokens(cost.total_tokens)],
+      ["单均 token", fmtTokens(cost.avg_tokens_per_order)],
+    ]);
+    renderTiles($("#tiles-quality"), [
+      ["注册用户", `${stats.user_count ?? 0} 人`],
+      ["建议抽检", `${stats.suggested_count} 单`],
+      ["待核验", `${stats.unverified_count ?? 0} 单`],
+      ["逃单", `${stats.evaded_count ?? 0} 单`],
+      ["测试单", `${stats.test_count ?? 0} 单`],
+    ]);
+
     barChart(stats.hourly || []);
     lineChart(stats.cumulative || []);
-    costChart(stats.cost || {}, stats.total_revenue || 0);
+    costChart(cost, stats.total_revenue || 0);
+
+    const reminder = $("#verify-reminder");
+    if ((stats.unverified_count || 0) > 0) {
+      reminder.textContent = `⚑ 有 ${stats.unverified_count} 单待核验，请在「订单管理」里标记已核验或逃单。`;
+    } else {
+      reminder.textContent = "";
+    }
   }
 
   function renderUsers(users) {
@@ -589,10 +682,12 @@
   }
 
   // ---------------- 轮询
+  const SECTIONS = ["#revenue-section", "#cost-section", "#orders-section", "#users-section"];
+
   async function load() {
     const box = $("#orders");
     if (!token) {
-      $("#dashboard").classList.add("hidden");
+      SECTIONS.forEach((sel) => $(sel).classList.add("hidden"));
       box.replaceChildren(el("div", "empty", "请先填写 ADMIN_TOKEN"));
       return;
     }
@@ -602,8 +697,7 @@
         api("/api/admin/orders"),
         api("/api/admin/users"),
       ]);
-      $("#dashboard").classList.remove("hidden");
-      $("#users").classList.remove("hidden");
+      SECTIONS.forEach((sel) => $(sel).classList.remove("hidden"));
       renderStats(stats);
       renderUsers(usersData.users || []);
       renderOrders(ordersData.orders || []);
@@ -611,8 +705,7 @@
         try { const detail = await api(`/api/admin/orders/${drawerId}`); renderDetail(detail); } catch (e) { /* ignore */ }
       }
     } catch (err) {
-      $("#dashboard").classList.add("hidden");
-      $("#users").classList.add("hidden");
+      SECTIONS.forEach((sel) => $(sel).classList.add("hidden"));
       box.replaceChildren(el("div", "empty error", err.message));
     }
   }
