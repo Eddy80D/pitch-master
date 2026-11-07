@@ -91,7 +91,16 @@
         <div class="chart-title">累计营业额（元）</div>
         <svg id="line-chart" viewBox="0 0 520 130" preserveAspectRatio="none"></svg>
       </div>
+      <div class="chart-box">
+        <div class="chart-title">成本 vs 收入</div>
+        <svg id="cost-chart" viewBox="0 0 520 130" preserveAspectRatio="none"></svg>
+      </div>
     </div>
+  </section>
+
+  <section id="users" class="card hidden">
+    <div class="chart-title">注册用户（加分材料 #7）</div>
+    <div id="users-table"></div>
   </section>
 
   <div id="tabs" class="tabs">
@@ -189,6 +198,42 @@
     svg.innerHTML = parts.join("");
   }
 
+  function fmtTokens(value) {
+    const n = Number(value || 0);
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+    return String(n);
+  }
+
+  function costChart(cost, revenue) {
+    const svg = $("#cost-chart");
+    const known = cost && cost.cost_known;
+    if (!known) {
+      svg.innerHTML = `<text x="260" y="65" fill="#8b8b99" font-size="11" text-anchor="middle">待官方价目确认（仅统计 token）</text>`;
+      return;
+    }
+    const W = 520, H = 130, padL = 40, padB = 24, padT = 12;
+    const values = [Number(revenue || 0), Number(cost.total_cost || 0)];
+    const max = Math.max(1, ...values);
+    const barH = (H - padB - padT) * 0.65;
+    const barW = 90;
+    const parts = [`<line x1="${padL}" y1="${H - padB}" x2="${W - 10}" y2="${H - padB}" stroke="#282832"/>`];
+    ["收入", "模型成本"].forEach((label, index) => {
+      const value = values[index];
+      const h = (value / max) * barH;
+      const x = 140 + index * 180;
+      const y = H - padB - h;
+      const color = index === 0 ? "#58c08a" : "#e06a6a";
+      parts.push(`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}"/>`);
+      parts.push(`<text x="${x + barW / 2}" y="${y - 4}" fill="#ececf1" font-size="10" text-anchor="middle">¥${value.toFixed(2)}</text>`);
+      parts.push(`<text x="${x + barW / 2}" y="${H - 8}" fill="#8b8b99" font-size="10" text-anchor="middle">${label}</text>`);
+    });
+    if (cost.gross_margin !== null && cost.gross_margin !== undefined) {
+      parts.push(`<text x="${W - 10}" y="${padT + 4}" fill="#8b8b99" font-size="10" text-anchor="end">毛利率 ${(cost.gross_margin * 100).toFixed(1)}%</text>`);
+    }
+    svg.innerHTML = parts.join("");
+  }
+
   function lineChart(data) {
     const svg = $("#line-chart");
     const W = 520, H = 130, padL = 24, padB = 20, padT = 10;
@@ -223,6 +268,11 @@
       ["重审单", `${stats.rework_count} 单`],
       ["建议抽检", `${stats.suggested_count} 单`],
       ["测试单", `${stats.test_count ?? 0} 单`],
+      ["注册用户", `${stats.user_count ?? 0} 人`],
+      ["今日消耗", fmtTokens(stats.cost?.today_tokens)],
+      ["本月消耗", fmtTokens(stats.cost?.month_tokens)],
+      ["历史累计", fmtTokens(stats.cost?.total_tokens)],
+      ["单均消耗", fmtTokens(stats.cost?.avg_tokens_per_order)],
     ];
     $("#tiles").replaceChildren(...tiles.map(([k, v]) => {
       const tile = el("div", "tile");
@@ -231,6 +281,31 @@
     }));
     barChart(stats.hourly || []);
     lineChart(stats.cumulative || []);
+    costChart(stats.cost || {}, stats.total_revenue || 0);
+  }
+
+  function renderUsers(users) {
+    const box = $("#users-table");
+    if (!users.length) {
+      box.replaceChildren(el("div", "hint", "暂无注册用户"));
+      return;
+    }
+    const table = el("table");
+    const head = el("tr");
+    ["称呼", "联系方式", "评审次数", "订单数", "成交"].forEach((text) => head.append(el("th", "", text)));
+    table.append(head);
+    users.forEach((user) => {
+      const row = el("tr");
+      row.append(
+        el("td", "", user.name),
+        el("td", "", user.contact || "-"),
+        el("td", "", String(user.session_count)),
+        el("td", "", String(user.order_count)),
+        el("td", "", user.paid ? "已成交" : "未成交")
+      );
+      table.append(row);
+    });
+    box.replaceChildren(table);
   }
 
   // ---------------- 订单列表
@@ -391,6 +466,12 @@
 
     box.append(el("div", "kv", `订单 ${order.order_id} · 状态 ${STATUS_LABEL[order.status] || order.status} · ¥${order.price}`));
     box.append(el("div", "kv", `仓库 ${order.repo_url}`));
+    if (data.usage) {
+      const costText = data.usage.cost_known
+        ? ` / ¥${Number(data.usage.cost).toFixed(4)}`
+        : " / 成本待官方价目确认";
+      box.append(el("div", "hint", `本单消耗 ${data.usage.tokens} tokens（${data.usage.calls} 次调用${costText}）`));
+    }
     if (order.qa_suggested && order.qa_suggest_reasons?.length) {
       box.append(el("div", "flag", `⚑ 建议抽检：${order.qa_suggest_reasons.join("；")}`));
     }
@@ -516,18 +597,22 @@
       return;
     }
     try {
-      const [stats, ordersData] = await Promise.all([
+      const [stats, ordersData, usersData] = await Promise.all([
         api("/api/admin/stats"),
         api("/api/admin/orders"),
+        api("/api/admin/users"),
       ]);
       $("#dashboard").classList.remove("hidden");
+      $("#users").classList.remove("hidden");
       renderStats(stats);
+      renderUsers(usersData.users || []);
       renderOrders(ordersData.orders || []);
       if (drawerId) {
         try { const detail = await api(`/api/admin/orders/${drawerId}`); renderDetail(detail); } catch (e) { /* ignore */ }
       }
     } catch (err) {
       $("#dashboard").classList.add("hidden");
+      $("#users").classList.add("hidden");
       box.replaceChildren(el("div", "empty error", err.message));
     }
   }

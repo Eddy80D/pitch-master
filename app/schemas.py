@@ -180,6 +180,8 @@ class SessionState(BaseModel):
     precheck_done: bool = False
     precheck_stats: dict[str, Any] = Field(default_factory=dict)
     price: float = 0.0
+    user_name: str = ""
+    user_session_count: int = 0
     totals: dict[str, Any] = Field(default_factory=dict)
     error: dict[str, Any] | None = None
     created_at: float = 0.0

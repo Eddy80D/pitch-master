@@ -23,6 +23,18 @@ python -m uvicorn app.main:app --reload --port 8000
 
 老板后台：营收看板（今日/累计/待放行/待核验/逃单/测试单 + 纯 SVG 柱状/折线图）、订单列表、订单详情（transcript / 初评终评 / 质检通过或打回 / 免费重审 / 老板亲签）。订单流水写 `logs/orders.jsonl`，重启回放。
 
+### 轻量注册（D3-growth）
+
+- 提交表单新增「称呼/队名（必填）」与「联系方式（选填）」，无密码、无验证。
+- 首次提交自动注册到 `logs/users.jsonl`；同称呼再次提交 `session_count+1`，预检卡片显示「欢迎回来，第 N 次登台」。
+- 称呼写入报告标题与徽章位；联系方式只出现在 `.env` 之外的 `users.jsonl` 与 admin 用户列表，**不进 SSE / 公开快照 / 报告**。
+
+### 成本看板
+
+- `usage.jsonl` 每条记录新增 `session_id`（历史记录归为"未归属"）。
+- `GET /api/admin/stats` 返回 cost 区块：今日 / 本月 / 历史累计 token、单均消耗（真实单）、按模型分组、pricing 就绪后的成本与毛利率。
+- 订单详情显示「本单消耗 N tokens」；后台成本 vs 收入柱状图为纯 SVG，零外部依赖。
+
 ### 营业打磨（D3.5）
 
 - `AUTO_APPROVE=True`（默认）：用户点「我已支付」后立即开审；订单进入「待核验」，老板事后在后台标记「已核验 / 逃单」。`False` 回退人工放行。
@@ -51,6 +63,7 @@ python -m uvicorn app.main:app --reload --port 8000
 | POST | `/api/admin/verify/{id}?token=…` | 自动放行单标记已核验 |
 | POST | `/api/admin/evade/{id}?token=…` | 标记逃单 |
 | POST | `/api/admin/test/{id}?token=…` | 标为/取消测试单 |
+| GET | `/api/admin/users?token=…` | 注册用户列表（含联系方式） |
 
 ## 自测
 
@@ -61,6 +74,7 @@ python scripts/test_full_loop.py             # T16：mock 全流程（不调 API
 python scripts/test_patch.py                 # D2 补丁：支付/admin/PRD 上限/HTML 提取（不调 API）
 python scripts/test_d3.py                    # D3：预检/订单持久化/统计/质检/重审（不调 API）
 python scripts/test_polish.py                # D3.5：测试单/自动放行/核验/IP 护栏（不调 API）
+python scripts/test_growth.py                # D3-growth：注册/隐私/成本口径（不调 API）
 python scripts/test_timer.py                 # 限时显示：需用短超时启动服务（见脚本头注释）
 python scripts/test_e2e.py                   # T16：浏览器端到端（需 Chrome + playwright，会调真实 API）
 python scripts/business_report.py            # 经营流水与成本分析（纯标准库，零 LLM）

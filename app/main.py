@@ -21,7 +21,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Str
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config, events, orders, repo_loader, state_machine
+from . import config, events, mimo_client, orders, repo_loader, state_machine, usage, users
 from .agents import analyst, judges
 from .agents import report as report_agent
 from .schemas import JudgeVerdict, score_totals, transcript_to_text
@@ -37,6 +37,7 @@ async def lifespan(_: FastAPI):
     config.ensure_dirs()
     config.validate()
     orders.store.load()
+    users.store.load()
     logger.info(
         "PitchMaster 启动，模型：%s / %s，演示模式：%s 问 / %ss / 介绍 %ss，支付拦截：%s",
         config.MODEL_PRO,
@@ -57,6 +58,8 @@ class CreateSessionBody(BaseModel):
     repo_url: str = Field(min_length=3)
     prd: str | None = None
     demo_url: str | None = None
+    name: str = ""
+    contact: str = ""
 
 
 class TextBody(BaseModel):
@@ -164,7 +167,13 @@ async def _run_precheck(session: state_machine.Session) -> None:
         "suspicious_count": repo_loader.scan_suspicious(loaded["text"]),
         "price": session.price,
     }
-    await session.emit(events.PRECHECK_DONE, **session.precheck_stats)
+    await session.emit(
+        events.PRECHECK_DONE,
+        **session.precheck_stats,
+        user_name=session.user_name,
+        session_count=session.user_session_count,
+        welcome_back=session.user_session_count > 1,
+    )
 
     if config.PAYMENT_REQUIRED:
         await session.emit(
@@ -180,10 +189,22 @@ async def _run_precheck(session: state_machine.Session) -> None:
         _start_pipeline(session)
 
 
+def _personalize_report(text: str, user_name: str) -> str:
+    if not user_name:
+        return text
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if line.startswith("# 预评审报告"):
+            lines[index] = f"# 预评审报告 · {user_name}"
+            return "\n".join(lines) + "\n"
+    return f"# 预评审报告 · {user_name}\n\n{text}"
+
+
 def _build_report_data(session: state_machine.Session) -> dict[str, Any]:
     pack = session.evidence
     return {
         "repo_url": session.repo_url,
+        "user_name": session.user_name,
         "evidence": pack.model_dump() if pack else {},
         "prd_text": session.prd_text,
         "demo_text": session.demo_text,
@@ -211,6 +232,7 @@ async def _wait_with_event(
 
 
 async def _run_pipeline(session: state_machine.Session) -> None:
+    mimo_client.set_session_id(session.id)
     try:
         # ---------------------------------------------------------- 仓库 + 材料
         if session.precheck_done:
@@ -470,6 +492,7 @@ async def _run_pipeline(session: state_machine.Session) -> None:
             logger.warning("报告生成失败，走模板降级：%s", exc)
             report_text = report_agent.fallback(report_data)
 
+        report_text = _personalize_report(report_text, session.user_name)
         session.report_text = report_text
         config.ensure_dirs()
         (config.REPORTS_DIR / f"{session.id}.md").write_text(
@@ -481,6 +504,7 @@ async def _run_pipeline(session: state_machine.Session) -> None:
             chars=len(report_text),
             totals=score_totals(session.verdict_initial, session.verdict_final),
             owner_comment=session.owner_comment,
+            user_name=session.user_name,
         )
 
         await session.set_phase("done")
@@ -529,6 +553,10 @@ async def create_session(
     request: Request,
 ) -> dict[str, Any]:
     repo_url = _validate_repo_url(body.repo_url)
+    name = body.name.strip()[:20]
+    if not name:
+        raise HTTPException(status_code=400, detail="请留个称呼，报告上会写你的名字")
+    contact = body.contact.strip()[:50]
     is_test = not config.PAYMENT_REQUIRED
     client_ip = request.client.host if request.client else ""
 
@@ -542,8 +570,12 @@ async def create_session(
             detail="当前排队人数较多，请稍后再试",
         )
 
+    user, is_new = users.store.register(name, contact)
     session = state_machine.store.create(repo_url, body.prd, body.demo_url)
     session.price = config.PRICE_YUAN
+    session.user_id = user.user_id
+    session.user_name = user.name
+    session.user_session_count = user.session_count
     orders.store.create(
         session.id,
         repo_url,
@@ -552,6 +584,8 @@ async def create_session(
         price=config.PRICE_YUAN,
         is_test=is_test,
         client_ip=client_ip,
+        user_id=user.user_id,
+        user_name=user.name,
     )
     await session.emit(
         events.SESSION_CREATED,
@@ -567,6 +601,9 @@ async def create_session(
             "session_id": session.id,
             "payment_required": config.PAYMENT_REQUIRED,
             "precheck": True,
+            "user_name": user.name,
+            "session_count": user.session_count,
+            "welcome_back": not is_new,
         }
 
     if config.PAYMENT_REQUIRED:
@@ -580,6 +617,9 @@ async def create_session(
             "session_id": session.id,
             "payment_required": True,
             "precheck": False,
+            "user_name": user.name,
+            "session_count": user.session_count,
+            "welcome_back": not is_new,
         }
 
     session.paid_status = "approved"
@@ -589,6 +629,9 @@ async def create_session(
         "session_id": session.id,
         "payment_required": False,
         "precheck": False,
+        "user_name": user.name,
+        "session_count": user.session_count,
+        "welcome_back": not is_new,
     }
 
 
@@ -634,7 +677,68 @@ async def admin_orders(token: str = "") -> dict[str, Any]:
 @app.get("/api/admin/stats")
 async def admin_stats(token: str = "") -> dict[str, Any]:
     _require_admin(token)
-    return orders.store.stats()
+    result = orders.store.stats()
+    usage_summary = usage.store.summary()
+    real_done = [
+        order
+        for order in orders.store.all()
+        if order.status == "done" and not order.is_test
+    ]
+    divisor = max(1, len(real_done))
+    session_tokens = usage_summary.get("session_tokens") or {}
+    per_order_tokens = sum(
+        session_tokens.get(order.order_id, 0) for order in real_done
+    )
+    total_cost = usage_summary.get("total_cost")
+    revenue = float(result.get("total_revenue") or 0)
+    result["user_count"] = users.store.count()
+    result["cost"] = {
+        "total_tokens": usage_summary.get("total_tokens", 0),
+        "today_tokens": usage_summary.get("today_tokens", 0),
+        "month_tokens": usage_summary.get("month_tokens", 0),
+        "avg_tokens_per_order": per_order_tokens // divisor,
+        "unattributed_tokens": usage_summary.get("unattributed_tokens", 0),
+        "by_model": usage_summary.get("by_model", {}),
+        "cost_known": usage_summary.get("cost_known", False),
+        "total_cost": total_cost,
+        "today_cost": usage_summary.get("today_cost"),
+        "month_cost": usage_summary.get("month_cost"),
+        "avg_cost_per_order": (
+            round(total_cost / divisor, 6) if total_cost is not None else None
+        ),
+        "gross_margin": (
+            round((revenue - total_cost) / revenue, 4)
+            if revenue > 0 and total_cost is not None
+            else None
+        ),
+    }
+    return result
+
+
+@app.get("/api/admin/users")
+async def admin_users(token: str = "") -> dict[str, Any]:
+    _require_admin(token)
+    rows = []
+    for user in users.store.all():
+        user_orders = [
+            order for order in orders.store.all() if order.user_id == user.user_id
+        ]
+        real_orders = [order for order in user_orders if not order.is_test]
+        paid = any(order.approved_at for order in real_orders)
+        latest = max(real_orders, key=lambda item: item.created_at, default=None)
+        rows.append(
+            {
+                "user_id": user.user_id,
+                "name": user.name,
+                "contact": user.contact,
+                "session_count": user.session_count,
+                "order_count": len(real_orders),
+                "paid": paid,
+                "last_status": latest.status if latest else "",
+            }
+        )
+    rows.sort(key=lambda item: item["session_count"], reverse=True)
+    return {"users": rows}
 
 
 @app.get("/api/admin/orders/{session_id}")
@@ -653,7 +757,11 @@ async def admin_order_detail(session_id: str, token: str = "") -> dict[str, Any]
             session_data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             session_data = {}
-    return {"order": order.model_dump(), "session": session_data}
+    return {
+        "order": order.model_dump(),
+        "session": session_data,
+        "usage": usage.store.for_session(session_id),
+    }
 
 
 @app.post("/api/admin/approve/{session_id}")

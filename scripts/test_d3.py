@@ -22,7 +22,7 @@ for stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-from app import config, main, orders, repo_loader, state_machine  # noqa: E402
+from app import config, main, orders, repo_loader, state_machine, users  # noqa: E402
 from app.schemas import FinalVerdict, JudgeVerdict  # noqa: E402
 
 
@@ -90,11 +90,13 @@ async def run() -> int:
         "ADMIN_TOKEN": config.ADMIN_TOKEN,
         "ORDERS_FILE": config.ORDERS_FILE,
         "ORDERS_SUMMARY_FILE": config.ORDERS_SUMMARY_FILE,
+        "USERS_FILE": config.USERS_FILE,
     }
 
     tmpdir = Path(tempfile.mkdtemp(prefix="pm_d3_"))
     config.ORDERS_FILE = tmpdir / "orders.jsonl"
     config.ORDERS_SUMMARY_FILE = tmpdir / "orders_summary.json"
+    config.USERS_FILE = tmpdir / "users.jsonl"
     config.PRECHECK_ENABLED = True
     config.PAYMENT_REQUIRED = True
     config.AUTO_APPROVE = False
@@ -102,6 +104,8 @@ async def run() -> int:
 
     orders.store._orders.clear()
     orders.store._loaded = True
+    users.store._users.clear()
+    users.store._loaded = True
     state_machine.store._sessions.clear()
 
     initial, finals = build_verdicts()
@@ -134,7 +138,7 @@ async def run() -> int:
 
         # ---------------- 预检 + 支付
         result = await main.create_session(
-            main.CreateSessionBody(repo_url="https://github.com/demo/precheck"),
+            main.CreateSessionBody(repo_url="https://github.com/demo/precheck", name="测试队"),
             fake_request(),
         )
         session = state_machine.store.get(result["session_id"])
@@ -197,7 +201,7 @@ async def run() -> int:
         # ---------------- 坏仓库：付费前报错
         bad_repo = True
         bad_result = await main.create_session(
-            main.CreateSessionBody(repo_url="https://github.com/demo/bad"),
+            main.CreateSessionBody(repo_url="https://github.com/demo/bad", name="测试队"),
             fake_request(),
         )
         bad_session = state_machine.store.get(bad_result["session_id"])
@@ -216,6 +220,8 @@ async def run() -> int:
             setattr(config, key, value)
         orders.store._orders.clear()
         orders.store._loaded = False
+        users.store._users.clear()
+        users.store._loaded = False
         state_machine.store._sessions.clear()
         shutil.rmtree(tmpdir, ignore_errors=True)
 

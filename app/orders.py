@@ -36,6 +36,8 @@ class Order(BaseModel):
     refunded: bool = False
     note: str = ""
     totals: dict[str, Any] = Field(default_factory=dict)
+    user_id: str = ""
+    user_name: str = ""
 
     # D3.5：营业数据纯度 / 自动放行核验
     is_test: bool = False
@@ -111,6 +113,8 @@ class OrderStore:
         price: float | None = None,
         is_test: bool = False,
         client_ip: str = "",
+        user_id: str = "",
+        user_name: str = "",
     ) -> Order:
         order = Order(
             order_id=order_id,
@@ -121,6 +125,8 @@ class OrderStore:
             created_at=time.time(),
             is_test=is_test,
             client_ip=client_ip,
+            user_id=user_id,
+            user_name=user_name,
         )
         return self.upsert(order)
 

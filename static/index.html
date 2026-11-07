@@ -114,6 +114,7 @@
     font-size: 14px;
   }
 
+  #precheck-text { white-space: pre-line; }
   #pay-box { text-align: center; margin-top: 16px; }
   #pay-box img { width: 220px; max-width: 70vw; border-radius: 10px; background: #fff; padding: 6px; }
   #pay-box .pay-title { color: var(--gold); font-size: 15px; margin: 0 0 12px; }
@@ -207,6 +208,16 @@
       </div>
       <div class="row">
         <div>
+          <label for="user-name">称呼 / 队名（必填，≤20 字）</label>
+          <input id="user-name" maxlength="20" placeholder="留个称呼，报告上会写你的名字" autocomplete="off" required>
+        </div>
+        <div>
+          <label for="contact">联系方式（选填，≤50 字）</label>
+          <input id="contact" maxlength="50" placeholder="选填，微信/邮箱，老板亲自联系用" autocomplete="off">
+        </div>
+      </div>
+      <div class="row">
+        <div>
           <label for="prd">PRD 链接或摘要（选填，缺省会限制商业化评分）</label>
           <input id="prd" name="prd" placeholder="https://... 或一两句话" autocomplete="off">
         </div>
@@ -282,14 +293,14 @@
   <!-- 三级：报告页 -->
   <section id="screen-report" class="hidden">
     <div class="card">
-      <h2>预评审报告</h2>
+      <h2 id="report-title">预评审报告</h2>
       <div id="owner-comment" class="owner hidden">
         <div class="owner-label">老板亲签</div>
         <div id="owner-comment-text"></div>
       </div>
       <div id="report-summary">报告生成中…</div>
       <a id="report-link" class="report-link" href="#" download>下载 Markdown 报告</a>
-      <div class="badge">🏅 徽章位（待设计）</div>
+      <div id="report-badge" class="badge">🏅 徽章位（待设计）</div>
       <div class="actions">
         <button id="restart" class="ghost" type="button">再来一单</button>
       </div>
@@ -541,14 +552,21 @@
     hide(payBox);
     const total = payload.files_read ?? 0;
     const suspicious = payload.suspicious_count ?? 0;
-    $("#precheck-text").textContent = suspicious > 0
+    const welcome = payload.welcome_back
+      ? `欢迎回来，${payload.user_name}！这是你第 ${payload.session_count} 次登台。\n`
+      : "";
+    $("#precheck-text").textContent = welcome + (suspicious > 0
       ? `已读取 ${total} 个文件，发现 ${suspicious} 处值得评委深挖的疑点……付费 ¥${payload.price ?? 19.9}，让五位评委告诉你它们是什么。`
-      : `已读取 ${total} 个文件，暂未发现明显异常——但评委可能看到你没注意的问题。付费 ¥${payload.price ?? 19.9} 开始评审。`;
+      : `已读取 ${total} 个文件，暂未发现明显异常——但评委可能看到你没注意的问题。付费 ¥${payload.price ?? 19.9} 开始评审。`);
     $("#precheck-stats").textContent =
       `${payload.repo_name || ""} · ${payload.chars ?? 0} 字符 · 跳过 ${payload.files_skipped ?? 0} 个文件`;
   }
 
   function renderReport(data) {
+    if (data.user_name) {
+      $("#report-title").textContent = `预评审报告 · ${data.user_name}`;
+      $("#report-badge").textContent = `🏅 ${data.user_name} 的徽章位（待设计）`;
+    }
     const totals = data.totals || {};
     const delta = Number(totals.delta ?? 0);
     const sign = delta >= 0 ? "+" : "";
@@ -768,7 +786,13 @@
       if (snap.phase === "created") {
         showScreen("submit");
         if (snap.precheck_done) {
-          renderPrecheck({ ...(snap.precheck_stats || {}), price: snap.price });
+          renderPrecheck({
+            ...(snap.precheck_stats || {}),
+            price: snap.price,
+            user_name: snap.user_name || "",
+            session_count: snap.user_session_count || 0,
+            welcome_back: (snap.user_session_count || 0) > 1,
+          });
           if (snap.paid_status === "unpaid") {
             show(payBox);
             $("#pay-title").textContent = `扫码支付 ¥${snap.price ?? 19.9} 后开始评审`;
@@ -792,6 +816,7 @@
         renderReport({
           totals: snap.totals || {},
           owner_comment: snap.owner_comment || "",
+          user_name: snap.user_name || "",
         });
       }
       connect(id);
@@ -805,7 +830,13 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const repo = repoInput.value.trim();
+    const userName = $("#user-name").value.trim();
     if (!repo) return;
+    if (!userName) {
+      $("#user-name").focus();
+      log("请先留个称呼，报告上会写你的名字", "red");
+      return;
+    }
 
     startBtn.disabled = true;
     finished = false;
@@ -824,6 +855,8 @@
         repo_url: repo,
         prd: $("#prd").value.trim() || null,
         demo_url: $("#demo").value.trim() || null,
+        name: userName,
+        contact: $("#contact").value.trim() || "",
       });
       sessionId = data.session_id;
       paymentRequired = Boolean(data.payment_required);

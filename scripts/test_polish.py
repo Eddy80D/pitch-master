@@ -19,7 +19,7 @@ for stream in (sys.stdout, sys.stderr):
 
 from fastapi import HTTPException  # noqa: E402
 
-from app import config, main, orders, state_machine  # noqa: E402
+from app import config, main, orders, state_machine, users  # noqa: E402
 
 
 class FakeClient:
@@ -40,7 +40,7 @@ async def fake_pipeline(session: state_machine.Session) -> None:
 
 async def create(host: str, repo: str) -> tuple[dict, state_machine.Session]:
     result = await main.create_session(
-        main.CreateSessionBody(repo_url=repo),
+        main.CreateSessionBody(repo_url=repo, name="测试队"),
         FakeRequest(host),
     )
     return result, state_machine.store.get(result["session_id"])
@@ -58,12 +58,14 @@ async def run() -> int:
             "MAX_ACTIVE_SESSIONS_PER_IP",
             "ORDERS_FILE",
             "ORDERS_SUMMARY_FILE",
+            "USERS_FILE",
         )
     }
 
     tmpdir = Path(tempfile.mkdtemp(prefix="pm_polish_"))
     config.ORDERS_FILE = tmpdir / "orders.jsonl"
     config.ORDERS_SUMMARY_FILE = tmpdir / "orders_summary.json"
+    config.USERS_FILE = tmpdir / "users.jsonl"
     config.PRECHECK_ENABLED = False
     config.PAYMENT_REQUIRED = True
     config.AUTO_APPROVE = True
@@ -72,6 +74,8 @@ async def run() -> int:
 
     orders.store._orders.clear()
     orders.store._loaded = True
+    users.store._users.clear()
+    users.store._loaded = True
     state_machine.store._sessions.clear()
     main._run_pipeline = fake_pipeline
 
@@ -172,6 +176,8 @@ async def run() -> int:
             setattr(config, key, value)
         orders.store._orders.clear()
         orders.store._loaded = False
+        users.store._users.clear()
+        users.store._loaded = False
         state_machine.store._sessions.clear()
         shutil.rmtree(tmpdir, ignore_errors=True)
 

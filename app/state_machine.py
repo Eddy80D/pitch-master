@@ -72,6 +72,11 @@ class Session:
         self.repo_text: str = ""
         self.price: float = config.PRICE_YUAN
 
+        # D3-growth：轻量用户（联系方式不进入 session / 快照）
+        self.user_id: str = ""
+        self.user_name: str = ""
+        self.user_session_count: int = 0
+
         # P0-4：支付与老板后台
         self.paid_status = "unpaid"  # unpaid → pending → approved
         self.owner_comment = ""
@@ -227,6 +232,8 @@ class Session:
             precheck_done=self.precheck_done,
             precheck_stats=self.precheck_stats,
             price=self.price,
+            user_name=self.user_name,
+            user_session_count=self.user_session_count,
             totals=(
                 score_totals(self.verdict_initial, self.verdict_final)
                 if self.verdict_final

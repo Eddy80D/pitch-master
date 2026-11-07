@@ -51,7 +51,12 @@ def main() -> int:
 
         page.goto(base_url, wait_until="domcontentloaded")
         page.fill("#repo", repo_url)
+        page.fill("#user-name", "窦柘")
+        page.fill("#contact", "test@example.com")
         page.click("#form-submit")
+        e2e_session_id = page.evaluate(
+            "new URLSearchParams(location.search).get('s')"
+        )
 
         # 0) 支付拦截（PAYMENT_REQUIRED=True 时）
         page.wait_for_function(
@@ -211,6 +216,14 @@ def main() -> int:
             timeout=60_000,
         )
         print("[刷新恢复] 通过")
+
+        # 测试单归一：避免 E2E 数据污染营业流水
+        if config.ADMIN_TOKEN and e2e_session_id:
+            page.request.post(
+                f"{base_url}/api/admin/test/{e2e_session_id}?token={config.ADMIN_TOKEN}",
+                data=json.dumps({"is_test": True}),
+                headers={"Content-Type": "application/json"},
+            )
 
         browser.close()
 

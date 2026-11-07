@@ -27,7 +27,7 @@ for stream in (sys.stdout, sys.stderr):
 
 from fastapi import HTTPException  # noqa: E402
 
-from app import config, main, orders, state_machine  # noqa: E402
+from app import config, main, orders, state_machine, users  # noqa: E402
 from app.agents import judges  # noqa: E402
 from app.repo_loader import _VisibleTextParser, _is_private_host  # noqa: E402
 from app.schemas import EvidencePack  # noqa: E402
@@ -136,12 +136,16 @@ async def test_payment_and_admin() -> None:
     original_auto_approve = config.AUTO_APPROVE
     original_orders_file = config.ORDERS_FILE
     original_summary_file = config.ORDERS_SUMMARY_FILE
+    original_users_file = config.USERS_FILE
 
     tmpdir = Path(tempfile.mkdtemp(prefix="pm_orders_"))
     config.ORDERS_FILE = tmpdir / "orders.jsonl"
     config.ORDERS_SUMMARY_FILE = tmpdir / "orders_summary.json"
+    config.USERS_FILE = tmpdir / "users.jsonl"
     orders.store._orders.clear()
     orders.store._loaded = True
+    users.store._users.clear()
+    users.store._loaded = True
 
     async def fake_pipeline(session):
         await session.set_phase("loading")
@@ -157,7 +161,7 @@ async def test_payment_and_admin() -> None:
 
     try:
         result = await main.create_session(
-            main.CreateSessionBody(repo_url="https://github.com/demo/demo"),
+            main.CreateSessionBody(repo_url="https://github.com/demo/demo", name="测试队"),
             fake_request(),
         )
         session_id = result["session_id"]
@@ -205,7 +209,7 @@ async def test_payment_and_admin() -> None:
         # PAYMENT_REQUIRED=False 直接启动
         config.PAYMENT_REQUIRED = False
         result2 = await main.create_session(
-            main.CreateSessionBody(repo_url="https://github.com/demo/demo2"),
+            main.CreateSessionBody(repo_url="https://github.com/demo/demo2", name="测试队"),
             fake_request(),
         )
         assert result2["payment_required"] is False
@@ -220,8 +224,11 @@ async def test_payment_and_admin() -> None:
         config.ADMIN_TOKEN = original_token
         config.ORDERS_FILE = original_orders_file
         config.ORDERS_SUMMARY_FILE = original_summary_file
+        config.USERS_FILE = original_users_file
         orders.store._orders.clear()
         orders.store._loaded = False
+        users.store._users.clear()
+        users.store._loaded = False
         import shutil
 
         shutil.rmtree(tmpdir, ignore_errors=True)

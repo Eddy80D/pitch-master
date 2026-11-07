@@ -11,6 +11,7 @@ import asyncio
 import json
 import threading
 import time
+from contextvars import ContextVar
 from typing import Any, AsyncIterator
 
 import httpx
@@ -18,6 +19,17 @@ import httpx
 from . import config
 
 _write_lock = threading.Lock()
+
+# 当前 Pipeline 所属 session；contextvar 会随 asyncio 任务继承
+_session_var: ContextVar[str | None] = ContextVar("pitchmaster_session", default=None)
+
+
+def set_session_id(session_id: str | None) -> None:
+    _session_var.set(session_id)
+
+
+def current_session_id() -> str | None:
+    return _session_var.get()
 
 
 def _headers() -> dict[str, str]:
@@ -36,6 +48,8 @@ def _record_usage(caller: str, model: str, usage: dict[str, Any] | None) -> None
     usage = usage or {}
     record = {
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "ts_epoch": time.time(),
+        "session_id": _session_var.get(),
         "model": model,
         "caller": caller,
         "prompt_tokens": usage.get("prompt_tokens"),

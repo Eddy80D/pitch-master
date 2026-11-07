@@ -72,6 +72,8 @@ USAGE_FILE: Path = LOG_DIR / "usage.jsonl"
 SESSIONS_DIR: Path = LOG_DIR / "sessions"
 ORDERS_FILE: Path = LOG_DIR / "orders.jsonl"
 ORDERS_SUMMARY_FILE: Path = LOG_DIR / "orders_summary.json"
+USERS_FILE: Path = LOG_DIR / "users.jsonl"
+PRICING_FILE: Path = ROOT / "pricing.yaml"
 REPORTS_DIR: Path = _path_env("REPORTS_DIR", ROOT / "reports")
 
 JUDGES_FILE: Path = ROOT / "judges.yaml"
