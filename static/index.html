@@ -277,7 +277,10 @@
     transition: opacity .25s ease;
     z-index: 2;
   }
-  .judge-lineup-card:hover .card-image { opacity: 1; }
+  .judge-lineup-card.has-image .card-image-normal { opacity: 1; }
+  .judge-lineup-card.has-image .card-question { opacity: 0; }
+  .judge-lineup-card.has-hover:hover .card-image-normal { opacity: 0; }
+  .judge-lineup-card.has-hover:hover .card-image-hover { opacity: 1; }
   .judge-lineup-card:hover .card-question { opacity: 0; }
   .card-bottom { position: absolute; bottom: 14px; left: 16px; right: 16px; z-index: 3; font-size: 13px; opacity: .9; }
   @keyframes jelly {
@@ -311,6 +314,62 @@
   .badge-empty { color: var(--ink-2); font-size: 13px; }
 
   .qr-fallback { display: inline-block; padding: 32px 22px; background: var(--surface-2); border: 1px dashed var(--line); border-radius: 10px; color: var(--ink-2); font-size: 13px; }
+
+  /* ---- 舞台剧场 ---- */
+  .theatre {
+    background: linear-gradient(180deg, #FBFBF9 0%, var(--surface-2) 100%);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 18px 18px 0;
+    margin-bottom: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .theatre-head h2 { font-size: 28px; line-height: 1.25; margin: 0; color: var(--ink); letter-spacing: 1px; }
+  .theatre-head h2 span { color: var(--blue); }
+  .theatre-head p { color: var(--ink-2); font-size: 11px; letter-spacing: 2px; margin: 6px 0 0; text-transform: uppercase; }
+  .audience-label { color: var(--ink-2); font-size: 10px; letter-spacing: 2px; margin-top: 10px; }
+  .audience { position: relative; height: 84px; margin: 4px 0 -18px; overflow: hidden; }
+  .aud-person { position: absolute; width: 16px; height: 20px; }
+  .aud-person::before { content: ""; position: absolute; top: 0; left: 4px; width: 8px; height: 8px; border-radius: 50%; background: #B9B6AE; }
+  .aud-person::after { content: ""; position: absolute; bottom: 0; left: 2px; width: 12px; height: 10px; border-radius: 8px 8px 3px 3px; background: #B9B6AE; }
+
+  .stage-judges { position: relative; z-index: 3; display: flex; justify-content: space-around; align-items: flex-end; gap: 8px; padding: 0 8px; }
+  .stage-judge { width: 100px; text-align: center; cursor: pointer; transition: transform .2s ease; position: relative; }
+  .stage-judge:hover { transform: translateY(-4px); }
+  .stage-img { display: none; width: 88px; height: 110px; object-fit: contain; margin: 0 auto; filter: drop-shadow(0 6px 10px rgba(26,26,46,.10)); }
+  .stage-judge[data-state="normal"] .stage-img.normal { display: block; }
+  .stage-judge[data-state="pass"] .stage-img.pass { display: block; }
+  .stage-judge[data-state="fail"] .stage-img.fail { display: block; }
+  .stage-judge.speaking .stage-img { transform: translateY(-6px) scale(1.06); filter: drop-shadow(0 10px 18px rgba(59,111,224,.35)); }
+  .stage-judge.pop .stage-img { animation: judgePop .5s cubic-bezier(.34,1.56,.64,1); }
+  .stage-name { font-size: 11px; color: var(--ink-2); margin-top: 2px; }
+  @keyframes judgePop {
+    0% { transform: scale(.82); }
+    60% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  .stage-floor { position: relative; height: 205px; margin-top: -20px; }
+  .stage-arc {
+    position: absolute;
+    left: 8%; right: 8%; bottom: 0; height: 158px;
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    background: linear-gradient(180deg, #FFFFFF 0%, #ECE9E2 100%);
+    border: 1px solid var(--line);
+    box-shadow: inset 0 14px 26px rgba(255,255,255,.95), 0 10px 24px rgba(26,26,46,.07);
+  }
+  .contestant { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); text-align: center; z-index: 2; }
+  .contestant img { width: 94px; height: 94px; object-fit: contain; filter: drop-shadow(0 5px 10px rgba(26,26,46,.12)); }
+  .contestant.cheer img { animation: contestantCheer .6s ease; }
+  .contestant.sad img { animation: contestantSad .6s ease; }
+  @keyframes contestantCheer { 0%,100% { transform: translateY(0); } 40% { transform: translateY(-10px) scale(1.04); } }
+  @keyframes contestantSad { 0%,100% { transform: translateY(0); } 40% { transform: translateY(4px) scale(.97); } }
+  .contestant-bubble { display: inline-flex; gap: 4px; padding: 8px 11px; border-radius: 12px; background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow); margin-bottom: 6px; }
+  .contestant-bubble span { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); animation: blink 1.2s infinite; }
+  .contestant-bubble span:nth-child(2) { animation-delay: .2s; }
+  .contestant-bubble span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
 
   .web-report { margin-top: 18px; }
   .report-hero {
@@ -370,6 +429,17 @@
     .hero-title { font-size: 52px; letter-spacing: 4px; }
     .lineup-grid { grid-template-columns: 1fr; }
     .flow-nav { width: 100%; margin-left: 0; }
+    .theatre { padding: 12px 8px 0; }
+    .theatre-head h2 { font-size: 20px; }
+    .audience { height: 64px; margin-bottom: -14px; }
+    .stage-judges { gap: 3px; padding: 0 2px; }
+    .stage-judge { width: 61px; }
+    .stage-img { width: 56px; height: 74px; }
+    .stage-name { font-size: 9px; }
+    .stage-floor { height: 158px; margin-top: -14px; }
+    .stage-arc { height: 122px; }
+    .contestant { bottom: 18px; }
+    .contestant img { width: 70px; height: 70px; }
   }
   @media (max-width: 640px) {
     main { padding: 36px 18px 60px; }
@@ -464,6 +534,54 @@
       <span id="summary"></span>
     </div>
 
+    <section class="theatre">
+      <div class="theatre-head">
+        <h2>五道目光，一次真正的<span>转身</span>。</h2>
+        <p>Five judges. One moment of truth.</p>
+      </div>
+      <div class="audience-label">AUDIENCE / 观众席</div>
+      <div id="audience" class="audience"></div>
+      <div id="stage-judges" class="stage-judges">
+        <div class="stage-judge" data-id="tech" data-state="normal" title="点击查看角色卡">
+          <img class="stage-img normal" src="/static/judges/tech-normal.png" alt="比特">
+          <img class="stage-img pass" src="/static/judges/tech-pass.png" alt="比特">
+          <img class="stage-img fail" src="/static/judges/tech-fail.png" alt="比特">
+          <div class="stage-name">比特</div>
+        </div>
+        <div class="stage-judge" data-id="biz" data-state="normal" title="点击查看角色卡">
+          <img class="stage-img normal" src="/static/judges/biz-normal.png" alt="钱滚滚">
+          <img class="stage-img pass" src="/static/judges/biz-pass.png" alt="钱滚滚">
+          <img class="stage-img fail" src="/static/judges/biz-fail.png" alt="钱滚滚">
+          <div class="stage-name">钱滚滚</div>
+        </div>
+        <div class="stage-judge" data-id="vision" data-state="normal" title="点击查看角色卡">
+          <img class="stage-img normal" src="/static/judges/vision-normal.png" alt="灵点">
+          <img class="stage-img pass" src="/static/judges/vision-pass.png" alt="灵点">
+          <img class="stage-img fail" src="/static/judges/vision-fail.png" alt="灵点">
+          <div class="stage-name">灵点</div>
+        </div>
+        <div class="stage-judge" data-id="originality" data-state="normal" title="点击查看角色卡">
+          <img class="stage-img normal" src="/static/judges/originality-normal.png" alt="摩斯">
+          <img class="stage-img pass" src="/static/judges/originality-pass.png" alt="摩斯">
+          <img class="stage-img fail" src="/static/judges/originality-fail.png" alt="摩斯">
+          <div class="stage-name">摩斯</div>
+        </div>
+        <div class="stage-judge" data-id="aesthetic" data-state="normal" title="点击查看角色卡">
+          <img class="stage-img normal" src="/static/judges/aesthetic-normal.png" alt="洛克">
+          <img class="stage-img pass" src="/static/judges/aesthetic-pass.png" alt="洛克">
+          <img class="stage-img fail" src="/static/judges/aesthetic-fail.png" alt="洛克">
+          <div class="stage-name">洛克</div>
+        </div>
+      </div>
+      <div class="stage-floor">
+        <div class="stage-arc"></div>
+        <div class="contestant" id="contestant">
+          <div class="contestant-bubble"><span></span><span></span><span></span></div>
+          <img id="contestant-img" src="/static/judges/player-normal.png" alt="选手">
+        </div>
+      </div>
+    </section>
+
     <section id="interaction">
       <div id="intro-box" class="card hidden">
         <h2>先介绍一下你的项目</h2>
@@ -497,7 +615,7 @@
     </section>
 
     <section id="judges"></section>
-    <section id="log"></section>
+    <section id="log" class="hidden"></section>
   </section>
 
   <!-- 三级：报告页 -->
@@ -859,6 +977,68 @@
     showScreen("report");
   }
 
+  // ---------------- 舞台剧场：评委状态 / 选手状态
+  let revealScore = 0;
+  let revealWeight = 0;
+
+  function resetRevealStats() {
+    revealScore = 0;
+    revealWeight = 0;
+  }
+
+  function finalPercent() {
+    return revealWeight > 0 ? Math.round((revealScore / revealWeight) * 100) : 0;
+  }
+
+  function setStageJudge(judgeId, state) {
+    const node = document.querySelector(`.stage-judge[data-id="${judgeId}"]`);
+    if (!node || node.dataset.state === state) return;
+    node.dataset.state = state;
+    node.classList.add("pop");
+    setTimeout(() => node.classList.remove("pop"), 600);
+  }
+
+  function setSpeaker(judgeId) {
+    document.querySelectorAll(".stage-judge").forEach((node) => {
+      node.classList.toggle("speaking", node.dataset.id === judgeId);
+    });
+  }
+
+  function setContestant(state) {
+    const image = $("#contestant-img");
+    const box = $("#contestant");
+    if (!image || !box) return;
+    const src = `/static/judges/player-${state}.png`;
+    if (!image.src.endsWith(src)) image.src = src;
+    box.classList.remove("cheer", "sad");
+    if (state === "cheer" || state === "sad") box.classList.add(state);
+  }
+
+  function renderAudience() {
+    const box = $("#audience");
+    if (!box || box.children.length) return;
+    let seed = 17;
+    const rand = () => {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    };
+    for (let index = 0; index < 32; index += 1) {
+      const person = el("div", "aud-person");
+      person.style.left = `${4 + rand() * 92}%`;
+      person.style.top = `${rand() * 72}%`;
+      person.style.transform = `scale(${0.7 + rand() * 0.35})`;
+      person.style.opacity = String(0.22 + rand() * 0.3);
+      box.append(person);
+    }
+  }
+
+  function initStage() {
+    renderAudience();
+    document.querySelectorAll(".stage-judge").forEach((node) => {
+      node.addEventListener("click", () => openCard(node.dataset.id));
+    });
+  }
+
   function finish(failed) {
     if (finished) return;
     finished = true;
@@ -915,7 +1095,16 @@
           hide(answerBox);
           stopTimer();
         }
-        if (payload.phase === "done") finish(false);
+        if (payload.phase === "reveal") resetRevealStats();
+        if (payload.phase === "deliberation") {
+          setSpeaker(null);
+          setContestant("normal");
+        }
+        if (payload.phase === "done") {
+          setSpeaker(null);
+          setContestant(finalPercent() >= 60 ? "cheer" : "sad");
+          finish(false);
+        }
         break;
       case "loading.progress":
         log(payload.msg || "");
@@ -927,15 +1116,18 @@
         break;
       case "judge.thinking":
         ensureCard(payload.judge_id);
+        setStageJudge(payload.judge_id, "normal");
         log(`评委 ${payload.judge_id} 正在阅读证据包…`);
         break;
       case "judge.ready":
         markReady(payload.judge_id, payload.name);
+        setStageJudge(payload.judge_id, "normal");
         log(`评委「${payload.name}」已就位`, "green");
         break;
       case "intro.requested":
         log(`请做自我介绍（限时 ${payload.timeout_s ?? 30} 秒）`, "gold");
         resetInputs();
+        setContestant("normal");
         $("#intro-text").value = "";
         show(introBox);
         $("#intro-text").focus();
@@ -960,10 +1152,13 @@
         show(answerBox);
         $("#answer-text").focus();
         startTimer("answer", payload.timeout_s ?? 45);
+        setSpeaker(payload.judge_id);
+        setContestant("answer");
         break;
       case "qa.answer":
         stopTimer();
         hide(answerBox);
+        setSpeaker(null);
         if (payload.reason === "timeout") {
           log("时间到，视为跳过本题", "red");
         } else if (payload.reason === "skip") {
@@ -973,17 +1168,23 @@
         }
         break;
       case "qa.reaction":
+        setContestant("normal");
         log(`「${payload.name}」：${payload.text}`);
         break;
       case "qa.end":
         stopTimer();
         hide(answerBox);
+        setSpeaker(null);
+        setContestant("normal");
         log("答辩结束");
         break;
       case "deliberation.start":
+        setSpeaker(null);
+        setContestant("normal");
         log("评委开始合议…", "gold");
         break;
       case "encore":
+        setStageJudge(payload.judge_id, "normal");
         log(`🎤 安可：${payload.name} 返场`, "gold");
         break;
       case "bicker.line":
@@ -992,8 +1193,14 @@
       case "reveal.chair":
         renderReveal(payload);
         if (payload.turned === null) {
+          setStageJudge(payload.judge_id, "normal");
           log(`🪑 ${payload.name}：缺席（缺评）`, "red");
         } else {
+          setStageJudge(payload.judge_id, payload.turned ? "pass" : "fail");
+          if (payload.weight > 0 && payload.final_score != null) {
+            revealScore += Number(payload.final_score);
+            revealWeight += Number(payload.weight);
+          }
           log(`🪑 ${payload.name}：${payload.turned ? "✅ 转身" : "❌ 留座"} ${payload.final_score ?? 0}/${payload.weight}`, payload.turned ? "green" : "red");
         }
         break;
@@ -1003,6 +1210,7 @@
         loadWebReport(sessionId);
         break;
       case "error":
+        setContestant("sad");
         log(`[${payload.stage}] ${payload.msg}`, "red");
         if (payload.stage === "precheck") {
           showScreen("submit");
@@ -1650,14 +1858,23 @@
 
     const body = el("div", "card-body");
     body.append(el("span", "card-question", "?"));
-    if (item.id !== "player") {
-      const image = document.createElement("img");
-      image.className = "card-image";
-      image.alt = item.name;
-      image.src = `/static/judges/${item.id}.png`;
-      image.addEventListener("error", () => image.remove());
-      body.append(image);
-    }
+
+    const normalImage = document.createElement("img");
+    normalImage.className = "card-image card-image-normal";
+    normalImage.alt = item.name;
+    normalImage.addEventListener("load", () => card.classList.add("has-image"));
+    normalImage.addEventListener("error", () => normalImage.remove());
+    normalImage.src = `/static/judges/${item.id}-normal.png`;
+    body.append(normalImage);
+
+    const hoverImage = document.createElement("img");
+    hoverImage.className = "card-image card-image-hover";
+    hoverImage.alt = item.name;
+    hoverImage.addEventListener("load", () => card.classList.add("has-hover"));
+    hoverImage.addEventListener("error", () => hoverImage.remove());
+    hoverImage.src = `/static/judges/${item.id}-${item.id === "player" ? "cheer" : "pass"}.png`;
+    body.append(hoverImage);
+
     card.append(body, el("div", "card-bottom", item.title || item.dimension || ""));
     card.addEventListener("click", () => openCard(item.id));
     return card;
@@ -1708,6 +1925,7 @@
   }
 
   initOpening();
+  initStage();
 
   // 刷新恢复：URL 上带 ?s=session_id
   const params = new URLSearchParams(location.search);

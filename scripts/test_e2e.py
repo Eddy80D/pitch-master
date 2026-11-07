@@ -54,6 +54,9 @@ def main() -> int:
         page.fill("#user-name", "窦柘")
         page.fill("#contact", "test@example.com")
         page.click("#form-submit")
+        page.wait_for_function(
+            "new URLSearchParams(location.search).get('s')", timeout=30_000
+        )
         e2e_session_id = page.evaluate(
             "new URLSearchParams(location.search).get('s')"
         )
@@ -173,6 +176,17 @@ def main() -> int:
             answered += 1
         print(f"[答辩] 已回答 {answered} 问")
 
+        # 3.5) 舞台亮椅：评委图切到通过/不通过，选手情绪图切换
+        page.wait_for_function(
+            """() => document.querySelectorAll('.stage-judge[data-state="pass"], .stage-judge[data-state="fail"]').length >= 4""",
+            timeout=180000,
+        )
+        stage_states = page.evaluate(
+            """() => Array.from(document.querySelectorAll('.stage-judge')).map(n => n.dataset.id + ':' + n.dataset.state)"""
+        )
+        print("[舞台] 评委状态:", stage_states)
+        page.screenshot(path=str(ROOT / "stage_reveal.png"), full_page=True)
+
         # 4) 报告页
         page.wait_for_function(
             """() => !document.querySelector('#screen-report').classList.contains('hidden')
@@ -204,8 +218,10 @@ def main() -> int:
                 f"{card.locator('.judge-verdict').inner_text()} | "
                 f"{card.locator('.judge-final').inner_text() if card.locator('.judge-final').count() else '（无终评）'}"
             )
+        contestant_src = page.get_attribute("#contestant-img", "src")
         print("[老板亲签]", "显示" if owner_visible else "无")
         print("[报告]", href, "→", resp.status, len(resp.text()), "字")
+        print("[选手终态]", contestant_src)
         print("[截图]", screenshot)
 
         # 5) 刷新恢复

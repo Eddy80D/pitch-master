@@ -41,7 +41,15 @@ def static_checks() -> None:
     assert names == ["比特", "钱滚滚", "灵点", "摩斯", "洛克"], names
     titles = [judge.get("title", "") for judge in load_judges()]
     assert titles == ["毒舌技术官", "商业大亨", "远见博士", "侦探", "美学警察"], titles
-    print("✅ 静态检查：6 张资料卡存在、零外链、评委展示名正确")
+
+    for judge_id in ["tech", "biz", "vision", "originality", "aesthetic"]:
+        for state in ["normal", "pass", "fail"]:
+            path = ROOT / "static" / "judges" / f"{judge_id}-{state}.png"
+            assert path.exists(), path
+    for state in ["normal", "answer", "cheer", "sad"]:
+        path = ROOT / "static" / "judges" / f"player-{state}.png"
+        assert path.exists(), path
+    print("✅ 静态检查：资料卡/角色四态图齐全、零外链、评委展示名正确")
 
 
 def browser_checks(base_url: str) -> None:

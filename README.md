@@ -32,6 +32,13 @@ python -m uvicorn app.main:app --reload --port 8000
 - `BG_VIDEO_URL` 为空时用米白渐变兜底；有值时 Hero 自动播放循环静音视频 + 白色半透明遮罩。
 - 零外部依赖：资料卡与页面均无 Google Fonts/CDN。
 
+### 舞台 UI（剧场视图）
+
+- 舞台页为「五道目光」剧场：观众剪影、5 位评委、选手讲台与气泡。
+- 角色图 `static/judges/{id}-{normal,pass,fail,icon}.png`；选手 `player-{normal,answer,cheer,sad,icon}.png`。
+- 事件联动：评委就位→普通；`reveal.chair` 转身→通过图、留座→不通过图；答辩时问题评委高亮、选手切答辩图；结束按总分切欢呼/失落。
+- 评委图可点击打开资料卡；移动端 375px 无横向溢出。
+
 ### 用户中心 + 网页版报告（d3-userhub）
 
 - 提交页底部「老顾客？查看我的舞台记录」→ 输入称呼（留过联系方式需一并填写）→ 历史评审、进步曲线（纯 SVG）、徽章墙。
