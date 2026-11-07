@@ -49,6 +49,9 @@ def main() -> int:
             print(page.inner_text("#log"))
             page.screenshot(path=str(ROOT / "e2e_failure.png"), full_page=True)
 
+        page.add_init_script(
+            "sessionStorage.setItem('pm_user', JSON.stringify({name:'窦柘',contact:'test@example.com'}))"
+        )
         page.goto(base_url, wait_until="domcontentloaded")
         page.fill("#repo", repo_url)
         page.fill("#user-name", "窦柘")
@@ -218,6 +221,10 @@ def main() -> int:
                 f"{card.locator('.judge-verdict').inner_text()} | "
                 f"{card.locator('.judge-final').inner_text() if card.locator('.judge-final').count() else '（无终评）'}"
             )
+        page.wait_for_function(
+            "document.querySelector('#phase').textContent.includes('评审完成')",
+            timeout=60_000,
+        )
         contestant_src = page.get_attribute("#contestant-img", "src")
         print("[老板亲签]", "显示" if owner_visible else "无")
         print("[报告]", href, "→", resp.status, len(resp.text()), "字")

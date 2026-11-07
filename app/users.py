@@ -64,6 +64,21 @@ class UserStore:
         except OSError:
             pass
 
+    def create(self, name: str, contact: str = "") -> User:
+        """正式注册；调用方需先检查重名。"""
+        now = time.time()
+        user = User(
+            user_id=uuid.uuid4().hex[:10],
+            name=name.strip()[:20],
+            contact=contact.strip()[:50],
+            created_at=now,
+            last_seen_at=now,
+            session_count=0,
+        )
+        self._users[user.user_id] = user
+        self._append(user)
+        return user
+
     def register(self, name: str, contact: str = "") -> tuple[User, bool]:
         """返回 (user, is_new)。同称呼复用，次数 +1。"""
         name = name.strip()[:20]

@@ -26,8 +26,9 @@ MIMO_TIMEOUT: float = float(os.getenv("MIMO_TIMEOUT", "180"))
 # —— D2 答辩 / 报告 ——
 # 演示模式为现场默认（Q6 裁决）；完整模式把三个值改成 10 / 120 / 180 即可
 QA_MAX_QUESTIONS: int = int(os.getenv("QA_MAX_QUESTIONS", "4"))
-QA_ANSWER_TIMEOUT_S: float = float(os.getenv("QA_ANSWER_TIMEOUT_S", "45"))
-INTRO_TIMEOUT_S: float = float(os.getenv("INTRO_TIMEOUT_S", "30"))
+# B3：取消前端倒计时，服务端只保留宽松兜底
+QA_ANSWER_TIMEOUT_S: float = float(os.getenv("QA_ANSWER_TIMEOUT_S", "600"))
+INTRO_TIMEOUT_S: float = float(os.getenv("INTRO_TIMEOUT_S", "300"))
 # TODO(窦柘): 插话权只预留开关，v1 未接入答辩流程（D2 规格允许默认关闭）
 INTERJECTION_ENABLED: bool = os.getenv("INTERJECTION_ENABLED", "False").lower() in {
     "1",
@@ -60,7 +61,7 @@ BG_VIDEO_URL: str = os.getenv("BG_VIDEO_URL", "")
 
 # —— D3.5 营业打磨 ——
 # 付款即开审，老板事后核验；False 回退人工放行
-AUTO_APPROVE: bool = os.getenv("AUTO_APPROVE", "True").lower() in {
+AUTO_APPROVE: bool = os.getenv("AUTO_APPROVE", "False").lower() in {
     "1",
     "true",
     "yes",
@@ -68,6 +69,10 @@ AUTO_APPROVE: bool = os.getenv("AUTO_APPROVE", "True").lower() in {
 # 单 IP 最多同时存在的非终态会话数
 MAX_ACTIVE_SESSIONS_PER_IP: int = int(
     os.getenv("MAX_ACTIVE_SESSIONS_PER_IP", "3")
+)
+# B1：单 IP 每日最多免费解剖次数（未付费访客会消耗 token）
+PREPAY_ANALYZE_MAX_PER_IP: int = int(
+    os.getenv("PREPAY_ANALYZE_MAX_PER_IP", "5")
 )
 
 LOG_DIR: Path = _path_env("LOG_DIR", ROOT / "logs")

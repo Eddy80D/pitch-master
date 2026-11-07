@@ -45,6 +45,7 @@ class Order(BaseModel):
     verify_status: str = "unverified"  # unverified | verified | evaded
     verified_at: float | None = None
     client_ip: str = ""
+    analyzed_at: float | None = None
 
 
 class OrderStore:
@@ -138,6 +139,18 @@ class OrderStore:
             for order in self._orders.values()
             if order.client_ip == client_ip
             and order.status in {"unpaid", "pending", "approved", "running"}
+        )
+
+    def analysis_count_today_by_ip(self, client_ip: str) -> int:
+        if not client_ip:
+            return 0
+        today = dt.date.today()
+        return sum(
+            1
+            for order in self._orders.values()
+            if order.client_ip == client_ip
+            and order.analyzed_at
+            and dt.datetime.fromtimestamp(order.analyzed_at).date() == today
         )
 
     def get(self, order_id: str) -> Order | None:

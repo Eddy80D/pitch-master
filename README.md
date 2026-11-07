@@ -12,7 +12,7 @@ python -m uvicorn app.main:app --reload --port 8000
 
 打开 http://127.0.0.1:8000 ，填一个 GitHub 仓库地址，点「开始评审」。
 
-演示模式默认 4 问 / 每问 45 秒 / 介绍 30 秒；完整模式改 `.env` 里的三个值（10 / 120 / 180）。
+默认 4 轮答辩；前端不再显示倒计时，服务端宽松兜底为 600s / 介绍 300s。
 
 ### 支付与老板后台
 
@@ -31,6 +31,17 @@ python -m uvicorn app.main:app --reload --port 8000
 - 评委形象图放 `static/judges/{id}.png`（tech/biz/vision/originality/aesthetic）即自动显示；缺图保持果冻问号。
 - `BG_VIDEO_URL` 为空时用米白渐变兜底；有值时 Hero 自动播放循环静音视频 + 白色半透明遮罩。
 - 零外部依赖：资料卡与页面均无 Google Fonts/CDN。
+
+### 提交日打磨（d4-stage-polish）
+
+- **解剖前置**：提交 → 预检 → 解剖（真实 LLM）→ 悬念卡（项目概述 + 疑点数量 + 1 条预览）→ 付款 → 老板人工放行 → 评审。付款前不显示收款区；坏仓库在收费前报错。
+- **免费解剖限次**：`PREPAY_ANALYZE_MAX_PER_IP=5`（单 IP 每日）。
+- **人工放行恢复**：`AUTO_APPROVE=False` 默认；付款后 `pending`，admin 放行启动流水线。
+- **三幕过场**：放行后全屏渐黑 1.2s → 「路演即将开始 / 选手请准备」逐行淡入 → 渐亮揭幕，约 4.3s 不可跳过。
+- **舞台**：左侧实时看板（移动端底部抽屉）、评委中轴辐射排布、评委/选手气泡（>80 字自动缩小）、回答输入框在选手下方。
+- **取消倒计时**：前端零倒计时 UI；服务端兜底 `QA_ANSWER_TIMEOUT_S=600 / INTRO_TIMEOUT_S=300`。
+- **PRD 上传**：支持 pdf / docx / md / txt（≤10MB），`/api/prd/extract` 提取文本；优先级 文件 > 链接/摘要。
+- **正式注册**：独立注册/登录视图；称呼唯一；点「开始评审」未登录会引导注册；登录态存 sessionStorage；老数据仅凭称呼兼容。
 
 ### 舞台 UI（剧场视图）
 
@@ -91,6 +102,9 @@ python -m uvicorn app.main:app --reload --port 8000
 | GET | `/api/users/{name}/overview?contact=…` | 我的舞台记录（联系方式校验） |
 | GET | `/api/sessions/{id}/report/data` | 网页版报告数据（markdown + 评分 + 问答） |
 | GET | `/api/judges` | 评委展示名 / 角色色（开场 UI） |
+| POST | `/api/auth/register` | 正式注册（称呼唯一） |
+| POST | `/api/auth/login` | 登录（联系方式匹配） |
+| POST | `/api/prd/extract` | 上传 PRD 并提取文本 |
 
 ## 自测
 
@@ -104,7 +118,6 @@ python scripts/test_polish.py                # D3.5：测试单/自动放行/核
 python scripts/test_growth.py                # D3-growth：注册/隐私/成本口径（不调 API）
 python scripts/test_opening_ui.py            # 开场 UI：6 卡/资料卡/零外链/375px（需服务 + Chrome）
 python scripts/test_userhub.py               # 用户中心/报告数据/访问控制（不调 API）
-python scripts/test_timer.py                 # 限时显示：需用短超时启动服务（见脚本头注释）
 python scripts/test_e2e.py                   # T16：浏览器端到端（需 Chrome + playwright，会调真实 API）
 python scripts/business_report.py            # 经营流水与成本分析（纯标准库，零 LLM）
 ```

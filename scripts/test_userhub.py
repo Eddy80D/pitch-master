@@ -21,7 +21,7 @@ for stream in (sys.stdout, sys.stderr):
 
 from fastapi import HTTPException  # noqa: E402
 
-from app import config, main, orders, state_machine, users  # noqa: E402
+from app import config, main, orders, prd, state_machine, users  # noqa: E402
 
 WEIGHTS = [("tech", "比特", "完成度", 25), ("biz", "商业大亨", "商业化", 25),
            ("vision", "远见博士", "创新性", 35), ("originality", "摩斯", "原创性", 15)]
@@ -94,6 +94,27 @@ async def run() -> int:
     state_machine.store._sessions.clear()
 
     try:
+        # 正式注册 / 登录 / 重名 / PRD 提取
+        reg = await main.auth_register(main.AuthBody(name="新用户", contact="wx_new"))
+        assert reg["session_count"] == 0
+        try:
+            await main.auth_register(main.AuthBody(name="新用户", contact="wx_new"))
+        except HTTPException as exc:
+            assert exc.status_code == 409
+        else:
+            raise AssertionError("重名未拦截")
+        try:
+            await main.auth_login(main.AuthBody(name="新用户", contact="wrong"))
+        except HTTPException as exc:
+            assert exc.status_code == 404
+        else:
+            raise AssertionError("错联系方式登录未 404")
+        login = await main.auth_login(main.AuthBody(name="新用户", contact="wx_new"))
+        assert login["name"] == "新用户"
+        assert prd.extract("prd.md", "# PRD\n\n微信登录".encode("utf-8")) == "# PRD\n\n微信登录"
+        users.store._users.pop(next(k for k, v in users.store._users.items() if v.name == "新用户"))
+        print("✅ 注册/重名/登录/PRD 提取通过")
+
         user1, _ = users.store.register("窦柘", "wx123")
         user2, _ = users.store.register("老用户", "")
         assert user1.contact == "wx123" and user2.contact == ""

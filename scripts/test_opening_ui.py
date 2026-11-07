@@ -36,6 +36,7 @@ def static_checks() -> None:
     index = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
     for marker in EXTERNAL_MARKERS:
         assert marker not in index, f"index.html 含外链 {marker}"
+    assert "timer" not in index.lower(), "倒计时 UI 仍有残留"
 
     names = [judge.get("display_name") or judge["name"] for judge in load_judges()]
     assert names == ["比特", "钱滚滚", "灵点", "摩斯", "洛克"], names

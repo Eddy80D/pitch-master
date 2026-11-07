@@ -16,12 +16,12 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config, events, mimo_client, orders, repo_loader, state_machine, usage, users
+from . import config, events, mimo_client, orders, prd as prd_parser, repo_loader, state_machine, usage, users
 from .agents import analyst, judges
 from .agents import report as report_agent
 from .schemas import FinalVerdict, JudgeVerdict, score_totals, transcript_to_text
@@ -57,6 +57,7 @@ app.mount("/static", StaticFiles(directory=str(config.ROOT / "static")), name="s
 class CreateSessionBody(BaseModel):
     repo_url: str = Field(min_length=3)
     prd: str | None = None
+    prd_text: str | None = None
     demo_url: str | None = None
     name: str = ""
     contact: str = ""
@@ -73,6 +74,11 @@ class QaBody(BaseModel):
 
 class TestFlagBody(BaseModel):
     is_test: bool
+
+
+class AuthBody(BaseModel):
+    name: str = ""
+    contact: str = ""
 
 
 def _validate_repo_url(repo_url: str) -> str:
@@ -141,12 +147,89 @@ def _finalize_order(session: state_machine.Session, success: bool) -> None:
 
 
 async def _run_precheck(session: state_machine.Session) -> None:
-    """零 token 预检：先让用户看到"读到了什么"，再收费。"""
+    """B1：预检 + 解剖前置到付款前，产出悬念卡后再收费。"""
     try:
         await session.emit(
-            events.LOADING_PROGRESS, msg="正在预检仓库（零 token，不调用模型）…"
+            events.LOADING_PROGRESS,
+            msg="读取仓库文件…",
+            progress=10,
         )
         loaded = await asyncio.to_thread(repo_loader.load_repository, session.repo_url)
+        session.repo_text = loaded["text"]
+        await session.emit(
+            events.LOADING_PROGRESS,
+            msg=f"已读取 {loaded['files_read']} 个文件，跳过 {loaded['files_skipped']} 个",
+            progress=30,
+            files_read=loaded["files_read"],
+            chars=len(loaded["text"]),
+        )
+
+        session.prd_text = (session.prd or "").strip()[:20_000]
+        session.demo_text = ""
+        if session.demo_url:
+            await session.emit(
+                events.LOADING_PROGRESS, msg="读取成品网址…", progress=40
+            )
+            session.demo_text = await asyncio.to_thread(
+                repo_loader.fetch_demo_page, session.demo_url
+            )
+
+        await session.emit(
+            events.LOADING_PROGRESS, msg="生成证据包…", progress=50
+        )
+        pack = await analyst.analyze(
+            session.repo_text,
+            session.repo_url,
+            session.prd_text,
+            session.demo_text,
+        )
+        pack.files_read = loaded["files_read"]
+        pack.files_skipped = loaded["files_skipped"]
+        session.evidence = pack
+        session.precheck_done = True
+        orders.store.transition(session.id, None, analyzed_at=time.time())
+        await session.emit(
+            events.LOADING_PROGRESS, msg="评委传阅中…", progress=90
+        )
+
+        concern_preview = ""
+        if pack.concerns:
+            concern_preview = (pack.concerns[0].point or "")[:80]
+        session.precheck_stats = {
+            "repo_name": repo_loader.repo_name(session.repo_url),
+            "files_read": loaded["files_read"],
+            "files_skipped": loaded["files_skipped"],
+            "files_total": loaded.get("files_total", 0),
+            "chars": len(loaded["text"]),
+            "suspicious_count": repo_loader.scan_suspicious(loaded["text"]),
+            "price": session.price,
+            "summary": (pack.summary or "")[:120],
+            "concerns_count": len(pack.concerns),
+            "concern_preview": concern_preview,
+            "injection_detected": bool(pack.injection_alert.get("detected")),
+            "progress": 100,
+        }
+        await session.emit(
+            events.PRECHECK_DONE,
+            **session.precheck_stats,
+            user_name=session.user_name,
+            session_count=session.user_session_count,
+            welcome_back=session.user_session_count > 1,
+            last_score=session.last_score,
+        )
+
+        if config.PAYMENT_REQUIRED:
+            await session.emit(
+                events.PAYMENT_WAITING,
+                qr_url="/static/pay_qr.png",
+                price=session.price,
+                auto_approve=config.AUTO_APPROVE,
+            )
+        else:
+            orders.store.transition(
+                session.id, "approved", verify_status="verified"
+            )
+            _start_pipeline(session)
     except Exception as exc:
         session.precheck_error = str(exc)
         orders.store.transition(session.id, "failed")
@@ -154,40 +237,6 @@ async def _run_precheck(session: state_machine.Session) -> None:
             events.ERROR, stage="precheck", msg=str(exc), degraded=False
         )
         await session.close()
-        return
-
-    session.repo_text = loaded["text"]
-    session.precheck_done = True
-    session.precheck_stats = {
-        "repo_name": repo_loader.repo_name(session.repo_url),
-        "files_read": loaded["files_read"],
-        "files_skipped": loaded["files_skipped"],
-        "files_total": loaded.get("files_total", 0),
-        "chars": len(loaded["text"]),
-        "suspicious_count": repo_loader.scan_suspicious(loaded["text"]),
-        "price": session.price,
-    }
-    await session.emit(
-        events.PRECHECK_DONE,
-        **session.precheck_stats,
-        user_name=session.user_name,
-        session_count=session.user_session_count,
-        welcome_back=session.user_session_count > 1,
-        last_score=session.last_score,
-    )
-
-    if config.PAYMENT_REQUIRED:
-        await session.emit(
-            events.PAYMENT_WAITING,
-            qr_url="/static/pay_qr.png",
-            price=session.price,
-            auto_approve=config.AUTO_APPROVE,
-        )
-    else:
-        orders.store.transition(
-            session.id, "approved", verify_status="verified"
-        )
-        _start_pipeline(session)
 
 
 def _personalize_report(text: str, user_name: str) -> str:
@@ -302,65 +351,74 @@ async def _wait_with_event(
 async def _run_pipeline(session: state_machine.Session) -> None:
     mimo_client.set_session_id(session.id)
     try:
-        # ---------------------------------------------------------- 仓库 + 材料
-        if session.precheck_done:
-            # 预检已完成：复用仓库文本，不再 clone
-            await session.emit(
-                events.LOADING_PROGRESS, msg="复用预检结果，开始解剖…"
-            )
-            loaded = {
-                "text": session.repo_text,
-                "files_read": session.precheck_stats.get("files_read", 0),
-                "files_skipped": session.precheck_stats.get("files_skipped", 0),
-                "files_total": session.precheck_stats.get("files_total", 0),
-            }
+        # ---------------------------------------------------------- 证据包
+        if session.evidence is not None:
+            # B1：解剖已在付款前完成，放行后直接初评
+            pack = session.evidence
+            await session.set_phase("judging")
         else:
-            await session.set_phase("loading")
-            await session.emit(events.LOADING_PROGRESS, msg="正在获取仓库…")
-            loaded = await asyncio.to_thread(
-                repo_loader.load_repository, session.repo_url
-            )
+            if session.precheck_done:
+                await session.emit(
+                    events.LOADING_PROGRESS,
+                    msg="复用预检结果，开始解剖…",
+                    progress=50,
+                )
+                loaded = {
+                    "text": session.repo_text,
+                    "files_read": session.precheck_stats.get("files_read", 0),
+                    "files_skipped": session.precheck_stats.get("files_skipped", 0),
+                    "files_total": session.precheck_stats.get("files_total", 0),
+                }
+            else:
+                await session.set_phase("loading")
+                await session.emit(
+                    events.LOADING_PROGRESS, msg="正在获取仓库…", progress=10
+                )
+                loaded = await asyncio.to_thread(
+                    repo_loader.load_repository, session.repo_url
+                )
+                await session.emit(
+                    events.LOADING_PROGRESS,
+                    msg=f"已读取 {loaded['files_read']} 个文件，跳过 {loaded['files_skipped']} 个",
+                    progress=30,
+                )
+
+            session.prd_text = (session.prd or "").strip()[:20_000]
+            session.demo_text = ""
+            if session.demo_url:
+                await session.emit(
+                    events.LOADING_PROGRESS, msg="正在读取成品网址…", progress=40
+                )
+                session.demo_text = await asyncio.to_thread(
+                    repo_loader.fetch_demo_page, session.demo_url
+                )
+                await session.emit(
+                    events.LOADING_PROGRESS,
+                    msg="成品网址已读取" if session.demo_text else "成品网址读取失败，按未提供处理",
+                    progress=45,
+                )
+
             await session.emit(
-                events.LOADING_PROGRESS,
-                msg=f"已读取 {loaded['files_read']} 个文件，跳过 {loaded['files_skipped']} 个",
+                events.LOADING_DONE,
+                files_read=loaded["files_read"],
+                files_skipped=loaded["files_skipped"],
+                files_total=loaded.get("files_total", 0),
+                chars=len(loaded["text"]),
+                prd_provided=bool(session.prd_text),
+                demo_provided=bool(session.demo_text),
             )
 
-        session.prd_text = (session.prd or "").strip()[:20_000]
-        session.demo_text = ""
-        if session.demo_url:
-            await session.emit(events.LOADING_PROGRESS, msg="正在读取成品网址…")
-            session.demo_text = await asyncio.to_thread(
-                repo_loader.fetch_demo_page, session.demo_url
+            await session.set_phase("analyzing")
+            pack = await analyst.analyze(
+                loaded["text"],
+                session.repo_url,
+                session.prd_text,
+                session.demo_text,
             )
-            await session.emit(
-                events.LOADING_PROGRESS,
-                msg="成品网址已读取" if session.demo_text else "成品网址读取失败，按未提供处理",
-            )
-
-        await session.emit(
-            events.LOADING_DONE,
-            files_read=loaded["files_read"],
-            files_skipped=loaded["files_skipped"],
-            files_total=loaded.get("files_total", 0),
-            chars=len(loaded["text"]),
-            prd_provided=bool(session.prd_text),
-            demo_provided=bool(session.demo_text),
-        )
-
-        # ---------------------------------------------------------- 解剖
-        await session.set_phase("analyzing")
-        pack = await analyst.analyze(
-            loaded["text"],
-            session.repo_url,
-            session.prd_text,
-            session.demo_text,
-        )
-        pack.files_read = loaded["files_read"]
-        pack.files_skipped = loaded["files_skipped"]
-        session.evidence = pack
-
-        # ---------------------------------------------------------- 初评
-        await session.set_phase("judging")
+            pack.files_read = loaded["files_read"]
+            pack.files_skipped = loaded["files_skipped"]
+            session.evidence = pack
+            await session.set_phase("judging")
 
         async def on_thinking(judge_id: str) -> None:
             await session.emit(events.JUDGE_THINKING, judge_id=judge_id)
@@ -655,8 +713,20 @@ async def create_session(
             detail="当前排队人数较多，请稍后再试",
         )
 
+    if (
+        config.PRECHECK_ENABLED
+        and client_ip
+        and orders.store.analysis_count_today_by_ip(client_ip)
+        >= config.PREPAY_ANALYZE_MAX_PER_IP
+    ):
+        raise HTTPException(
+            status_code=429,
+            detail="今日免费解剖次数已用完，请联系摊主",
+        )
+
+    prd_source = (body.prd_text or "").strip()[:20_000] or body.prd
     user, is_new = users.store.register(name, contact)
-    session = state_machine.store.create(repo_url, body.prd, body.demo_url)
+    session = state_machine.store.create(repo_url, prd_source, body.demo_url)
     session.price = config.PRICE_YUAN
     session.user_id = user.user_id
     session.user_name = user.name
@@ -665,7 +735,7 @@ async def create_session(
     orders.store.create(
         session.id,
         repo_url,
-        body.prd,
+        prd_source,
         body.demo_url,
         price=config.PRICE_YUAN,
         is_test=is_test,
@@ -689,7 +759,7 @@ async def create_session(
             "precheck": True,
             "user_name": user.name,
             "session_count": user.session_count,
-            "welcome_back": not is_new,
+            "welcome_back": user.session_count > 1,
             "last_score": session.last_score,
         }
 
@@ -706,7 +776,7 @@ async def create_session(
             "precheck": False,
             "user_name": user.name,
             "session_count": user.session_count,
-            "welcome_back": not is_new,
+            "welcome_back": user.session_count > 1,
             "last_score": session.last_score,
         }
 
@@ -719,9 +789,19 @@ async def create_session(
         "precheck": False,
         "user_name": user.name,
         "session_count": user.session_count,
-        "welcome_back": not is_new,
+        "welcome_back": user.session_count > 1,
         "last_score": session.last_score,
     }
+
+
+@app.post("/api/prd/extract")
+async def extract_prd(file: UploadFile = File(...)) -> dict[str, Any]:
+    raw = await file.read()
+    try:
+        text = prd_parser.extract(file.filename, raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"text": text, "chars": len(text)}
 
 
 @app.post("/api/sessions/{session_id}/paid")
@@ -1050,6 +1130,43 @@ async def skip_session(session_id: str) -> dict[str, bool]:
     if not await session.request_skip():
         raise HTTPException(status_code=409, detail="当前阶段不能跳过")
     return {"ok": True}
+
+
+@app.post("/api/auth/register")
+async def auth_register(body: AuthBody) -> dict[str, Any]:
+    name = body.name.strip()[:20]
+    contact = body.contact.strip()[:50]
+    if not name:
+        raise HTTPException(status_code=400, detail="请填写称呼")
+    if not contact:
+        raise HTTPException(status_code=400, detail="请填写联系方式")
+    if users.store.find_by_name(name) is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="这个称呼已被使用，换一个或联系摊主认领",
+        )
+    user = users.store.create(name, contact)
+    return {
+        "name": user.name,
+        "contact": user.contact,
+        "session_count": user.session_count,
+    }
+
+
+@app.post("/api/auth/login")
+async def auth_login(body: AuthBody) -> dict[str, Any]:
+    name = body.name.strip()[:20]
+    contact = body.contact.strip()[:50]
+    user = users.store.find_by_name(name)
+    if user is None:
+        raise HTTPException(status_code=404, detail="没有找到匹配的记录")
+    if user.contact and contact != user.contact:
+        raise HTTPException(status_code=404, detail="没有找到匹配的记录")
+    return {
+        "name": user.name,
+        "contact": user.contact,
+        "session_count": user.session_count,
+    }
 
 
 @app.get("/api/users/{name}/overview")

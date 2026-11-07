@@ -23,7 +23,7 @@ for stream in (sys.stdout, sys.stderr):
         pass
 
 from app import config, main, orders, repo_loader, state_machine, users  # noqa: E402
-from app.schemas import FinalVerdict, JudgeVerdict  # noqa: E402
+from app.schemas import EvidencePack, FinalVerdict, JudgeVerdict  # noqa: E402
 
 
 def usage_count() -> int:
@@ -82,6 +82,7 @@ async def wait_for(predicate, timeout: float = 5.0) -> None:
 
 async def run() -> int:
     original_load = repo_loader.load_repository
+    original_analyze = main.analyst.analyze
     original_pipeline = main._run_pipeline
     original = {
         "PRECHECK_ENABLED": config.PRECHECK_ENABLED,
@@ -130,7 +131,20 @@ async def run() -> int:
         main._finalize_order(session, True)
         await session.close()
 
+    async def fake_analyze(text, repo_url, prd_text="", demo_text=""):
+        return EvidencePack(
+            repo_url=repo_url,
+            summary="一个测试项目：AI 简历优化工具",
+            concerns=[
+                {"point": "缺少限流", "evidence": [{"file": "README", "lines": "1", "quote": "Hello"}]}
+            ],
+            injection_alert={"detected": False, "location": "", "quote": ""},
+            files_read=42,
+            files_skipped=7,
+        )
+
     repo_loader.load_repository = fake_load
+    main.analyst.analyze = fake_analyze
     main._run_pipeline = fake_pipeline
 
     try:
@@ -149,9 +163,10 @@ async def run() -> int:
         assert usage_count() == before, "预检调用了模型"
         stats = session.precheck_stats
         assert stats["files_read"] == 42 and stats["suspicious_count"] >= 2, stats
+        assert stats["concerns_count"] == 1 and "测试项目" in stats["summary"], stats
         order = orders.store.get(session.id)
         assert order.status == "unpaid" and order.price == config.PRICE_YUAN
-        print("✅ 预检零 token；统计与悬念事件正确；未付费不启动流水线")
+        print("✅ 预检 + 解剖前置；悬念数据正确；未付费不启动流水线")
 
         # ---------------- 支付 → 放行 → 完成 → 质检建议
         await main.mark_paid(session.id)
@@ -215,6 +230,7 @@ async def run() -> int:
         return 0
     finally:
         repo_loader.load_repository = original_load
+        main.analyst.analyze = original_analyze
         main._run_pipeline = original_pipeline
         for key, value in original.items():
             setattr(config, key, value)
