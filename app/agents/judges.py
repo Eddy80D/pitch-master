@@ -39,7 +39,8 @@ RECONSIDER_PROMPT = """你是「{name}」。
 你之前的初评：score={score}/{weight}, verdict={verdict}, rationale={rationale}
 以下是该团队的自我介绍与答辩记录：
 {transcript}
-输出严格 JSON：{{"final_score": 0-{weight}整数, "direction": "up"|"down"|"hold", "reason": "≤60字，必须引用用户答辩中的原话", "final_verdict": "turn"|"hold"}}
+复议规则：**只能维持或上调，绝不能低于初评**。请从答辩中寻找加分依据（新增证据、清晰边界、诚实承认不足等）；如果没有明显优点，就维持初评分数，不要为了犀利而扣分。
+输出严格 JSON：{{"final_score": {score}-{weight}整数, "direction": "up"|"hold"（禁止 down）, "reason": "≤60字，必须引用用户答辩中的原话；没有加分点时写'答辩未带来新增分，维持初评'", "final_verdict": "turn"|"hold"}}
 美学警察（weight=0）：final_score 固定 0，其余字段照出（reason 评风格）。只输出 JSON。"""
 
 BICKER_A_OPEN = """你是「{name_a}」，你最终选择 {verdict_a}。
@@ -335,6 +336,14 @@ async def reconsider_all(
                 final.final_score = _clamp(final.final_score, weight)
                 if verdict.judge_id == "tech" and not demo_provided:
                     final.final_score = min(final.final_score, 15)
+                # 反馈机制：答辩只加分不扣分，最低维持初评
+                initial_score = int(verdict.score)
+                final.final_score = max(initial_score, final.final_score)
+                final.direction = (
+                    "up" if final.final_score > initial_score else "hold"
+                )
+                if final.final_score == initial_score:
+                    final.reason = "答辩未带来新增分，维持初评（不扣分）"
                 # 与 D1 规则保持一致：计分评委的转身由分数阈值决定，
                 # 避免出现"0 分却写 turn"的自相矛盾终评。
                 if weight > 0:

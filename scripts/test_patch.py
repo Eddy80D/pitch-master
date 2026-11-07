@@ -30,7 +30,7 @@ from fastapi import HTTPException  # noqa: E402
 from app import config, main, orders, state_machine, users  # noqa: E402
 from app.agents import judges  # noqa: E402
 from app.repo_loader import _VisibleTextParser, _is_private_host  # noqa: E402
-from app.schemas import EvidencePack  # noqa: E402
+from app.schemas import EvidencePack, JudgeVerdict  # noqa: E402
 
 
 def test_demo_html_parser() -> None:
@@ -85,6 +85,59 @@ async def wait_done(session: state_machine.Session, timeout: float = 3.0) -> Non
             return
         await asyncio.sleep(0.01)
     raise AssertionError(f"会话未在 {timeout}s 内完成，phase={session.phase}")
+
+
+async def test_reconsider_no_deduction() -> None:
+    original = judges.mimo_client.chat
+    initial = [
+        JudgeVerdict(
+            judge_id="tech",
+            name="比特",
+            dimension="完成度",
+            weight=25,
+            score=10,
+            verdict="hold",
+            rationale="初评",
+        )
+    ]
+
+    async def fake_low(caller, model, messages, **kwargs):
+        return json.dumps(
+            {
+                "final_score": 0,
+                "direction": "down",
+                "reason": "答辩太差，扣分",
+                "final_verdict": "hold",
+            }
+        )
+
+    judges.mimo_client.chat = fake_low
+    try:
+        finals = await judges.reconsider_all(initial, "[回答] 不知道")
+        assert finals[0].final_score == 10, finals[0].final_score
+        assert finals[0].direction == "hold", finals[0].direction
+        assert "维持初评" in finals[0].reason
+    finally:
+        judges.mimo_client.chat = original
+
+    async def fake_high(caller, model, messages, **kwargs):
+        return json.dumps(
+            {
+                "final_score": 20,
+                "direction": "up",
+                "reason": "答辩给出了可验证路径",
+                "final_verdict": "turn",
+            }
+        )
+
+    judges.mimo_client.chat = fake_high
+    try:
+        finals = await judges.reconsider_all(initial, "[回答] 有证据")
+        assert finals[0].final_score == 20, finals[0].final_score
+        assert finals[0].direction == "up", finals[0].direction
+    finally:
+        judges.mimo_client.chat = original
+    print("✅ 复议只加分不扣分；无优点维持初评，有优点上调")
 
 
 def test_public_snapshot_has_no_scores() -> None:
@@ -237,6 +290,7 @@ async def test_payment_and_admin() -> None:
 async def main_test() -> int:
     test_demo_html_parser()
     await test_tech_cap()
+    await test_reconsider_no_deduction()
     test_public_snapshot_has_no_scores()
     await test_payment_and_admin()
     print("✅ D2 补丁自测全部通过")
