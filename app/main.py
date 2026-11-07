@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field
 from . import config, events, mimo_client, orders, repo_loader, state_machine, usage, users
 from .agents import analyst, judges
 from .agents import report as report_agent
-from .schemas import JudgeVerdict, score_totals, transcript_to_text
+from .schemas import FinalVerdict, JudgeVerdict, score_totals, transcript_to_text
 
 logger = logging.getLogger("pitchmaster")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -214,6 +214,52 @@ def _build_report_data(session: state_machine.Session) -> dict[str, Any]:
         "bicker": session.bicker,
         "totals": score_totals(session.verdict_initial, session.verdict_final),
     }
+
+
+def _load_session_data(session_id: str) -> dict[str, Any] | None:
+    session = state_machine.store.get(session_id)
+    if session is not None:
+        return session.snapshot().model_dump()
+    path = config.SESSIONS_DIR / f"{session_id}.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _totals_for_data(data: dict[str, Any]) -> dict[str, Any]:
+    totals = data.get("totals") or {}
+    if totals:
+        return totals
+    try:
+        initial = [JudgeVerdict(**item) for item in data.get("verdict_initial") or []]
+        final = [FinalVerdict(**item) for item in data.get("verdict_final") or []]
+        return score_totals(initial, final)
+    except Exception:
+        return {}
+
+
+def _four_turn(data: dict[str, Any]) -> bool:
+    finals = data.get("verdict_final") or []
+    scored = [
+        item
+        for item in finals
+        if int(item.get("weight") or 0) > 0 and not item.get("degraded")
+    ]
+    return len(scored) == 4 and all(
+        item.get("final_verdict") == "turn" for item in scored
+    )
+
+
+def _report_markdown(session_id: str) -> str:
+    session = state_machine.store.get(session_id)
+    if session is not None and session.report_text:
+        return session.report_text
+    path = config.REPORTS_DIR / f"{session_id}.md"
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
 
 
 async def _wait_with_event(
@@ -979,6 +1025,95 @@ async def skip_session(session_id: str) -> dict[str, bool]:
     return {"ok": True}
 
 
+@app.get("/api/users/{name}/overview")
+async def user_overview(name: str, contact: str = "") -> dict[str, Any]:
+    user = users.store.find_by_name(name)
+    if user is None:
+        raise HTTPException(status_code=404, detail="没有找到匹配的记录")
+    if user.contact and contact.strip() != user.contact:
+        raise HTTPException(status_code=404, detail="没有找到匹配的记录")
+
+    related = [
+        order
+        for order in orders.store.all()
+        if not order.is_test
+        and (
+            order.user_id == user.user_id
+            or (not order.user_id and order.user_name == user.name)
+        )
+    ]
+    related.sort(key=lambda item: item.created_at)
+
+    order_rows: list[dict[str, Any]] = []
+    scores: list[dict[str, Any]] = []
+    badge_count = 0
+    for order in related:
+        data = _load_session_data(order.order_id) or {}
+        totals = _totals_for_data(data)
+        four = _four_turn(data)
+        if four:
+            badge_count += 1
+        final_score = totals.get("final")
+        report_ready = bool(
+            data.get("report_ready")
+            or (config.REPORTS_DIR / f"{order.order_id}.md").exists()
+        )
+        order_rows.append(
+            {
+                "id": order.order_id,
+                "repo_url": order.repo_url,
+                "created_at": order.created_at,
+                "status": order.status,
+                "final_score": final_score,
+                "report_ready": report_ready,
+                "four_turn": four,
+            }
+        )
+        if final_score is not None and order.status == "done":
+            scores.append(
+                {
+                    "id": order.order_id,
+                    "created_at": order.done_at or order.created_at,
+                    "score": final_score,
+                }
+            )
+
+    scores.sort(key=lambda item: item["created_at"])
+    return {
+        "user": {
+            "name": user.name,
+            "created_at": user.created_at,
+            "session_count": user.session_count,
+        },
+        "orders": order_rows,
+        "scores": scores,
+        "badge_count": badge_count,
+    }
+
+
+@app.get("/api/sessions/{session_id}/report/data")
+async def report_data(session_id: str):
+    data = _load_session_data(session_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail="会话不存在")
+    markdown = _report_markdown(session_id)
+    if not markdown:
+        if data.get("phase") in {"report", "done"}:
+            return JSONResponse(status_code=202, content={"status": "generating"})
+        raise HTTPException(status_code=404, detail="报告尚未生成")
+    return {
+        "session_id": session_id,
+        "markdown": markdown,
+        "totals": _totals_for_data(data),
+        "initial": data.get("verdict_initial") or [],
+        "final": data.get("verdict_final") or [],
+        "transcript": data.get("transcript") or [],
+        "bicker": data.get("bicker") or [],
+        "owner_comment": data.get("owner_comment") or "",
+        "user_name": data.get("user_name") or "",
+    }
+
+
 @app.get("/api/sessions/{session_id}/report")
 async def get_report(session_id: str):
     session = _get_session(session_id)
@@ -997,7 +1132,21 @@ async def get_report(session_id: str):
 
 @app.get("/api/sessions/{session_id}")
 async def get_session(session_id: str) -> dict[str, Any]:
-    return _get_session(session_id).public_snapshot()
+    session = state_machine.store.get(session_id)
+    if session is not None:
+        return session.public_snapshot()
+
+    # 服务重启后内存会话丢失，回退到落盘快照（同样做公开字段裁剪）
+    data = _load_session_data(session_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail="会话不存在")
+    data.pop("verdicts", None)
+    data.pop("verdict_initial", None)
+    data.pop("verdict_final", None)
+    if data.get("phase") not in {"report", "done"}:
+        data["totals"] = {}
+        data["owner_comment"] = ""
+    return data
 
 
 @app.get("/api/sessions/{session_id}/events")

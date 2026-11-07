@@ -100,5 +100,12 @@ class UserStore:
     def get(self, user_id: str) -> User | None:
         return self._users.get(user_id)
 
+    def find_by_name(self, name: str) -> User | None:
+        target = name.strip()
+        for user in self._users.values():
+            if user.name == target:
+                return user
+        return None
+
 
 store = UserStore()

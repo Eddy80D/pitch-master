@@ -294,6 +294,77 @@
   .modal-panel iframe { width: 100%; height: 100%; border: 0; display: block; }
   .modal-close { position: absolute; top: 10px; right: 12px; z-index: 2; width: 34px; height: 34px; padding: 0; border-radius: 50%; background: rgba(26,26,46,.55); color: #fff; font-size: 20px; line-height: 1; }
 
+  .footer-hint a { color: var(--blue); text-decoration: none; }
+  .userhub-search { margin-bottom: 18px; }
+  .userhub-search h2 { margin: 0 0 6px; }
+  .userhub-search p { color: var(--ink-2); font-size: 13px; margin: 0 0 12px; }
+  .hub-head { margin: 8px 0 16px; }
+  .hub-head h2 { margin: 0 0 4px; }
+  #hub-chart svg { width: 100%; height: 180px; display: block; }
+  .hub-order { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .hub-order:last-child { border-bottom: 0; }
+  .hub-order .repo { flex: 1; min-width: 200px; font-family: var(--mono); font-size: 12px; color: var(--ink); word-break: break-all; }
+  .hub-order .score { font-family: var(--mono); color: var(--pink); font-size: 18px; }
+  .hub-order .status { color: var(--ink-2); font-size: 12px; }
+  .hub-badges { display: flex; flex-wrap: wrap; gap: 10px; }
+  .badge-item { width: 72px; height: 72px; border-radius: 50%; background: var(--pink-soft); color: var(--pink); display: grid; place-items: center; font-size: 12px; text-align: center; border: 2px solid var(--pink); }
+  .badge-empty { color: var(--ink-2); font-size: 13px; }
+
+  .qr-fallback { display: inline-block; padding: 32px 22px; background: var(--surface-2); border: 1px dashed var(--line); border-radius: 10px; color: var(--ink-2); font-size: 13px; }
+
+  .web-report { margin-top: 18px; }
+  .report-hero {
+    background: linear-gradient(135deg, var(--pink-soft) 0%, #FFF7FB 100%);
+    border: 1px solid var(--pink-soft);
+    border-radius: 16px;
+    padding: 22px;
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .report-hero .big { font-size: 56px; line-height: 1; font-family: var(--mono); color: var(--pink); }
+  .report-hero .meta { color: var(--ink-2); font-size: 13px; line-height: 1.9; }
+  .report-hero .delta-up { color: var(--green); font-family: var(--mono); }
+  .report-hero .delta-down { color: var(--red); font-family: var(--mono); }
+  .report-section { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .report-section h2 { font-size: 17px; margin: 0 0 12px; }
+  .report-section.bribery { border-left: 4px solid var(--red); background: #FFF6F6; }
+  .dim-cards { display: grid; gap: 12px; }
+  .dim-card { border-left: 4px solid var(--role-color); background: var(--surface-2); border-radius: 10px; padding: 14px; }
+  .dim-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .dim-name { font-weight: 700; color: var(--ink); }
+  .dim-score { font-family: var(--mono); color: var(--pink); font-size: 18px; }
+  .score-bar { height: 6px; background: #ECE9E2; border-radius: 999px; overflow: hidden; margin: 8px 0; }
+  .score-bar > div { height: 100%; background: var(--blue); }
+  .dim-reason { color: var(--ink-2); font-size: 13px; line-height: 1.65; margin: 0; }
+  .qa-thread { display: grid; gap: 10px; }
+  .qa-bubble { max-width: 84%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.65; }
+  .qa-q { background: var(--surface-2); border: 1px solid var(--line); }
+  .qa-a { background: rgba(59,111,224,.10); margin-left: auto; }
+  .qa-who { font-size: 11px; color: var(--ink-2); margin-bottom: 3px; }
+  .qa-react { color: var(--ink-2); font-size: 12px; font-style: italic; max-width: 84%; }
+  .md-content { color: var(--ink); font-size: 14px; line-height: 1.8; }
+  .md-content h1, .md-content h2, .md-content h3, .md-content h4 { color: var(--ink); margin: 14px 0 8px; }
+  .md-content h1 { font-size: 22px; }
+  .md-content h2 { font-size: 18px; }
+  .md-content h3 { font-size: 15px; }
+  .md-content p { margin: 8px 0; }
+  .md-content ul, .md-content ol { padding-left: 22px; margin: 8px 0; }
+  .md-content li { margin: 4px 0; }
+  .md-content table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+  .md-content th, .md-content td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+  .md-content th { color: var(--ink-2); font-weight: 500; }
+  .md-content pre { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px; overflow-x: auto; font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .md-content code { font-family: var(--mono); font-size: 12px; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
+  .md-content blockquote { margin: 10px 0; padding: 8px 12px; border-left: 3px solid var(--pink); background: var(--pink-soft); color: var(--ink-2); border-radius: 6px; }
+  .md-content a { color: var(--blue); }
+  .prio { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 999px; margin-right: 6px; font-family: var(--mono); }
+  .prio.high { background: rgba(217,80,80,.12); color: var(--red); }
+  .prio.mid { background: var(--pink-soft); color: var(--pink); }
+  .prio.low { background: #F1EFEA; color: var(--ink-2); }
+
   .hidden { display: none !important; }
   @media (max-width: 760px) {
     .hero-title { font-size: 52px; letter-spacing: 4px; }
@@ -366,6 +437,7 @@
     <div id="pay-box" class="card hidden">
       <p id="pay-title" class="pay-title">扫码支付后开始评审</p>
       <img id="pay-qr" src="/static/pay_qr.png" alt="收款码">
+      <div id="pay-qr-fallback" class="qr-fallback hidden">收款码挂载中，请呼叫摊主协助</div>
       <div class="actions" style="justify-content:center">
         <button id="paid-btn" type="button">我已支付</button>
       </div>
@@ -381,7 +453,7 @@
       <div id="judge-lineup" class="lineup-grid"></div>
     </section>
 
-    <p class="footer-hint">仓库以浅克隆方式读取，只读不写 · 演示模式默认 4 问 / 每问 45 秒</p>
+    <p class="footer-hint">仓库以浅克隆方式读取，只读不写 · 演示模式默认 4 问 / 每问 45 秒 · <a href="#" id="hub-link">老顾客？查看我的舞台记录</a></p>
   </section>
 
   <!-- 二级：舞台页 -->
@@ -438,12 +510,55 @@
       </div>
       <div id="report-summary">报告生成中…</div>
       <a id="report-link" class="report-link" href="#" download>下载 Markdown 报告</a>
+      <div id="web-report" class="web-report"></div>
       <div id="report-badge" class="badge">🏅 徽章位（待设计）</div>
       <div class="actions">
         <button id="restart" class="ghost" type="button">再来一单</button>
       </div>
     </div>
     <section id="log-report"></section>
+  </section>
+
+  <!-- 四级：我的舞台记录 -->
+  <section id="screen-userhub" class="hidden">
+    <div class="glass userhub-search">
+      <h2>我的舞台记录</h2>
+      <p>输入称呼找回历次评审；留过联系方式的需一并填写。</p>
+      <div class="row">
+        <div>
+          <label for="hub-name">称呼 / 队名</label>
+          <input id="hub-name" maxlength="20" placeholder="你提交时留的称呼">
+        </div>
+        <div>
+          <label for="hub-contact">联系方式（留过才填）</label>
+          <input id="hub-contact" maxlength="50" placeholder="微信 / 邮箱">
+        </div>
+      </div>
+      <div class="actions">
+        <button id="hub-query" type="button">查看记录</button>
+        <button id="hub-back" class="ghost" type="button">返回提交页</button>
+      </div>
+      <p id="hub-error" class="hint"></p>
+    </div>
+
+    <div id="hub-result" class="hidden">
+      <div class="hub-head">
+        <h2 id="hub-title"></h2>
+        <p id="hub-meta" class="hint"></p>
+      </div>
+      <div class="card">
+        <h3>进步曲线</h3>
+        <div id="hub-chart"></div>
+      </div>
+      <div class="card">
+        <h3>评审记录</h3>
+        <div id="hub-orders"></div>
+      </div>
+      <div class="card">
+        <h3>徽章墙</h3>
+        <div id="hub-badges"></div>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -526,6 +641,7 @@
     hide($("#screen-submit"));
     hide($("#screen-stage"));
     hide($("#screen-report"));
+    hide($("#screen-userhub"));
     show($(`#screen-${name}`));
   }
 
@@ -881,6 +997,7 @@
       case "report.ready":
         log(`报告已生成（${payload.chars} 字）`, "green");
         renderReport(payload);
+        loadWebReport(sessionId);
         break;
       case "error":
         log(`[${payload.stage}] ${payload.msg}`, "red");
@@ -964,8 +1081,11 @@
           owner_comment: snap.owner_comment || "",
           user_name: snap.user_name || "",
         });
+        loadWebReport(id);
       }
-      connect(id);
+      if (snap.phase !== "done") {
+        connect(id);
+      }
     } catch (err) {
       log(String(err.message || err), "red");
       history.replaceState(null, "", location.pathname);
@@ -1086,6 +1206,405 @@
   $("#restart").addEventListener("click", () => {
     history.replaceState(null, "", location.pathname);
     location.reload();
+  });
+
+  // ---------------- 网页版报告：极简 Markdown 渲染 + 结构化排版
+  const JUDGE_COLORS = {
+    tech: "#4A5568",
+    biz: "#C94A4A",
+    vision: "#3B6FE0",
+    originality: "#3D9B6A",
+    aesthetic: "#E75A9C",
+  };
+
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function mdInline(text) {
+    let value = escapeHtml(text);
+    value = value.replace(/`([^`]+)`/g, "<code>$1</code>");
+    value = value.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    return value;
+  }
+
+  function splitTableRow(line) {
+    return line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((cell) => cell.trim());
+  }
+
+  function mdToHtml(markdown) {
+    const lines = String(markdown || "").replace(/\r/g, "").split("\n");
+    const html = [];
+    let index = 0;
+
+    while (index < lines.length) {
+      const line = lines[index];
+
+      if (/^\s*```/.test(line)) {
+        index += 1;
+        const code = [];
+        while (index < lines.length && !/^\s*```/.test(lines[index])) {
+          code.push(lines[index]);
+          index += 1;
+        }
+        index += 1;
+        html.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+        continue;
+      }
+
+      const heading = line.match(/^(#{1,4})\s+(.*)$/);
+      if (heading) {
+        const level = heading[1].length;
+        html.push(`<h${level}>${mdInline(heading[2])}</h${level}>`);
+        index += 1;
+        continue;
+      }
+
+      if (/^\s*\|/.test(line) && index + 1 < lines.length && /^\s*\|?[\s:|-]+\|?\s*$/.test(lines[index + 1])) {
+        const headers = splitTableRow(line);
+        index += 2;
+        const rows = [];
+        while (index < lines.length && /^\s*\|/.test(lines[index])) {
+          rows.push(splitTableRow(lines[index]));
+          index += 1;
+        }
+        html.push(
+          `<table><thead><tr>${headers.map((cell) => `<th>${mdInline(cell)}</th>`).join("")}</tr></thead><tbody>` +
+          rows.map((row) => `<tr>${row.map((cell) => `<td>${mdInline(cell)}</td>`).join("")}</tr>`).join("") +
+          `</tbody></table>`
+        );
+        continue;
+      }
+
+      if (/^\s*[-*]\s+/.test(line)) {
+        const items = [];
+        while (index < lines.length && /^\s*[-*]\s+/.test(lines[index])) {
+          items.push(lines[index].replace(/^\s*[-*]\s+/, ""));
+          index += 1;
+        }
+        html.push(`<ul>${items.map((item) => `<li>${mdInline(item)}</li>`).join("")}</ul>`);
+        continue;
+      }
+
+      if (/^\s*\d+\.\s+/.test(line)) {
+        const items = [];
+        while (index < lines.length && /^\s*\d+\.\s+/.test(lines[index])) {
+          items.push(lines[index].replace(/^\s*\d+\.\s+/, ""));
+          index += 1;
+        }
+        html.push(`<ol>${items.map((item) => `<li>${mdInline(item)}</li>`).join("")}</ol>`);
+        continue;
+      }
+
+      if (/^\s*>\s?/.test(line)) {
+        const quotes = [];
+        while (index < lines.length && /^\s*>\s?/.test(lines[index])) {
+          quotes.push(lines[index].replace(/^\s*>\s?/, ""));
+          index += 1;
+        }
+        html.push(`<blockquote>${mdInline(quotes.join(" "))}</blockquote>`);
+        continue;
+      }
+
+      if (!line.trim()) {
+        index += 1;
+        continue;
+      }
+
+      const paragraph = [];
+      while (
+        index < lines.length &&
+        lines[index].trim() &&
+        !/^(#{1,4}\s|```|\s*[-*]\s|\s*\d+\.\s|>|\|)/.test(lines[index])
+      ) {
+        paragraph.push(lines[index]);
+        index += 1;
+      }
+      html.push(`<p>${mdInline(paragraph.join(" "))}</p>`);
+    }
+
+    return html.join("");
+  }
+
+  function splitSections(markdown) {
+    const lines = String(markdown || "").split("\n");
+    const sections = [];
+    let current = { title: "", body: [] };
+    for (const line of lines) {
+      const match = line.match(/^##\s+(.*)$/);
+      if (match) {
+        sections.push(current);
+        current = { title: match[1].trim(), body: [] };
+      } else {
+        current.body.push(line);
+      }
+    }
+    sections.push(current);
+    return sections.filter((section) => section.title || section.body.join("").trim());
+  }
+
+  function decoratePriorities(container) {
+    container.querySelectorAll("li").forEach((item) => {
+      const text = item.textContent || "";
+      let cls = "low";
+      let label = "低";
+      if (/P0|高|严重/.test(text)) {
+        cls = "high";
+        label = "高";
+      } else if (/P1|中/.test(text)) {
+        cls = "mid";
+        label = "中";
+      }
+      item.prepend(el("span", `prio ${cls}`, label));
+    });
+  }
+
+  function renderWebReport(data) {
+    const box = $("#web-report");
+    box.replaceChildren();
+
+    if (data.user_name) {
+      $("#report-title").textContent = `预评审报告 · ${data.user_name}`;
+      $("#report-badge").textContent = `🏅 ${data.user_name} 的徽章位（待设计）`;
+    }
+    if (data.owner_comment) {
+      $("#owner-comment-text").textContent = data.owner_comment;
+      show($("#owner-comment"));
+    } else {
+      hide($("#owner-comment"));
+    }
+
+    const totals = data.totals || {};
+    const finals = data.final || [];
+    const initials = {};
+    (data.initial || []).forEach((item) => { initials[item.judge_id] = item; });
+
+    const hero = el("div", "report-hero");
+    hero.append(el("div", "big", String(totals.final ?? "—")));
+    const meta = el("div", "meta");
+    const delta = Number(totals.delta ?? 0);
+    meta.append(document.createTextNode(
+      `满分 100 · 有效权重 ${totals.valid_weight ?? "-"} · 初评 ${totals.initial ?? "-"} · 临场力 `
+    ));
+    meta.append(el("span", delta >= 0 ? "delta-up" : "delta-down", `${delta >= 0 ? "↑" : "↓"} ${Math.abs(delta)}`));
+    if (Array.isArray(totals.missing) && totals.missing.length) {
+      meta.append(el("div", "hint", `缺评：${totals.missing.join("、")}`));
+    }
+    hero.append(meta);
+    box.append(hero);
+
+    if (finals.length) {
+      const section = el("div", "report-section");
+      section.append(el("h2", "", "各维度评审"));
+      const cards = el("div", "dim-cards");
+      finals.forEach((item) => {
+        const card = el("div", "dim-card");
+        card.style.setProperty("--role-color", JUDGE_COLORS[item.judge_id] || "#3B6FE0");
+        const head = el("div", "dim-head");
+        head.append(
+          el("span", "dim-name", `${item.name || item.judge_id} · ${item.dimension || ""}`),
+          el("span", "dim-score", item.weight > 0 ? `${item.final_score ?? 0} / ${item.weight}` : "不计分")
+        );
+        card.append(head);
+        if (item.weight > 0) {
+          const bar = el("div", "score-bar");
+          const inner = el("div", "");
+          inner.style.width = `${Math.max(0, Math.min(100, ((item.final_score || 0) / item.weight) * 100))}%`;
+          bar.append(inner);
+          card.append(bar);
+        }
+        const initial = initials[item.judge_id];
+        const change = initial ? `初评 ${initial.score ?? "-"} → 终评 ${item.final_score ?? "-"}` : "";
+        card.append(el("p", "dim-reason", `${change}${change ? " · " : ""}${item.reason || ""}`));
+        cards.append(card);
+      });
+      section.append(cards);
+      box.append(section);
+    }
+
+    const transcript = data.transcript || [];
+    if (transcript.length) {
+      const section = el("div", "report-section");
+      section.append(el("h2", "", "答辩实录"));
+      const thread = el("div", "qa-thread");
+      transcript.forEach((item) => {
+        if (item.role === "user_intro") {
+          const bubble = el("div", "qa-bubble qa-q");
+          bubble.append(el("div", "qa-who", "自我介绍"), document.createTextNode(item.text || ""));
+          thread.append(bubble);
+        } else if (item.role === "judge_q") {
+          const bubble = el("div", "qa-bubble qa-q");
+          bubble.append(el("div", "qa-who", `Q${item.index || ""} · ${item.judge_name || "评委"}`), document.createTextNode(item.text || ""));
+          thread.append(bubble);
+        } else if (item.role === "user_a") {
+          const bubble = el("div", "qa-bubble qa-a");
+          bubble.append(el("div", "qa-who", "回答"), document.createTextNode(item.text || ""));
+          thread.append(bubble);
+        } else if (item.role === "judge_reaction") {
+          thread.append(el("div", "qa-react", `↳ ${item.judge_name || "评委"}：${item.text || ""}`));
+        }
+      });
+      section.append(thread);
+      box.append(section);
+    }
+
+    const skip = /总分|各维度|答辩实录/;
+    splitSections(data.markdown || "").forEach((section) => {
+      if (!section.title || skip.test(section.title)) return;
+      const card = el("div", "report-section" + (/贿赂/.test(section.title) ? " bribery" : ""));
+      card.append(el("h2", "", section.title));
+      const content = el("div", "md-content");
+      content.innerHTML = mdToHtml(section.body.join("\n"));
+      if (/失分/.test(section.title)) decoratePriorities(content);
+      card.append(content);
+      box.append(card);
+    });
+
+    if (!box.children.length) {
+      box.append(el("div", "hint", "报告暂无内容，请使用上方下载按钮。"));
+    }
+  }
+
+  async function loadWebReport(id, attempt = 0) {
+    const box = $("#web-report");
+    if (!box) return;
+    box.replaceChildren(el("div", "hint", "网页版报告加载中…"));
+    try {
+      const response = await fetch(`/api/sessions/${id}/report/data`);
+      if (response.status === 202 && attempt < 20) {
+        setTimeout(() => loadWebReport(id, attempt + 1), 1500);
+        return;
+      }
+      if (!response.ok) throw new Error("报告尚未生成");
+      const data = await response.json();
+      sessionId = id;
+      $("#report-link").href = `/api/sessions/${id}/report`;
+      renderWebReport(data);
+    } catch (err) {
+      box.replaceChildren(el("div", "hint", "网页版报告加载失败，请使用上方下载按钮。"));
+    }
+  }
+
+  function openWebReport(id) {
+    sessionId = id;
+    $("#report-link").href = `/api/sessions/${id}/report`;
+    $("#report-summary").textContent = "";
+    hide($("#owner-comment"));
+    showScreen("report");
+    loadWebReport(id);
+  }
+
+  // ---------------- 我的舞台记录
+  function hubStatusLabel(status) {
+    return {
+      unpaid: "待付", pending: "待放行", approved: "已放行",
+      running: "评审中", done: "已完成", failed: "失败", reworked: "已重审",
+    }[status] || status;
+  }
+
+  function renderHubChart(scores) {
+    const box = $("#hub-chart");
+    box.replaceChildren();
+    if (!scores || scores.length < 2) {
+      box.append(el("div", "hint", "再测一次，看进步"));
+      return;
+    }
+    const W = 560, H = 180, pad = 28;
+    const step = (W - pad * 2) / (scores.length - 1);
+    const points = scores.map((item, index) => {
+      const x = pad + index * step;
+      const y = H - pad - (Math.max(0, Math.min(100, Number(item.score))) / 100) * (H - pad * 2);
+      return { x, y, score: item.score, id: item.id };
+    });
+    const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
+    const circles = points.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="4" fill="#E75A9C"/>`).join("");
+    const labels = points.map((point, index) =>
+      index % Math.max(1, Math.floor(points.length / 6)) === 0
+        ? `<text x="${point.x}" y="${H - 6}" fill="#9A9BAA" font-size="9" text-anchor="middle">第${index + 1}次</text>`
+        : ""
+    ).join("");
+    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <line x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}" stroke="#E6E3DD"/>
+      <polyline points="${polyline}" fill="none" stroke="#3B6FE0" stroke-width="2"/>
+      ${circles}${labels}
+    </svg>`;
+  }
+
+  function renderHubOrders(orders) {
+    const box = $("#hub-orders");
+    if (!orders.length) {
+      box.replaceChildren(el("div", "hint", "还没有评审记录"));
+      return;
+    }
+    box.replaceChildren(...orders.map((order) => {
+      const row = el("div", "hub-order");
+      const repo = el("span", "repo", order.repo_url);
+      const status = el("span", "status", hubStatusLabel(order.status));
+      const score = el("span", "score", order.final_score != null ? `${order.final_score} 分` : "—");
+      row.append(repo, status, score);
+      if (order.report_ready) {
+        const button = el("button", "ghost", "查看网页报告");
+        button.addEventListener("click", () => openWebReport(order.id));
+        row.append(button);
+      }
+      return row;
+    }));
+  }
+
+  function renderHubBadges(count) {
+    const box = $("#hub-badges");
+    if (!count) {
+      box.replaceChildren(el("div", "badge-empty", "四转虚位以待"));
+      return;
+    }
+    box.replaceChildren(...Array.from({ length: count }, () => el("div", "badge-item", "四转")));
+  }
+
+  async function queryHub() {
+    const name = $("#hub-name").value.trim();
+    const contact = $("#hub-contact").value.trim();
+    const error = $("#hub-error");
+    error.textContent = "";
+    if (!name) {
+      error.textContent = "请先填写称呼";
+      return;
+    }
+    const suffix = contact ? `?contact=${encodeURIComponent(contact)}` : "";
+    try {
+      const response = await fetch(`/api/users/${encodeURIComponent(name)}/overview${suffix}`);
+      if (!response.ok) throw new Error("没有找到匹配的记录");
+      const data = await response.json();
+      show($("#hub-result"));
+      $("#hub-title").textContent = `${data.user.name} · 第 ${data.user.session_count} 次登台`;
+      const created = new Date(data.user.created_at * 1000).toLocaleDateString();
+      $("#hub-meta").textContent = `注册于 ${created} · 共 ${data.orders.length} 条评审记录`;
+      renderHubChart(data.scores || []);
+      renderHubOrders(data.orders || []);
+      renderHubBadges(data.badge_count || 0);
+    } catch (err) {
+      hide($("#hub-result"));
+      error.textContent = String(err.message || err);
+    }
+  }
+
+  $("#hub-link").addEventListener("click", (event) => {
+    event.preventDefault();
+    showScreen("userhub");
+    $("#hub-name").focus();
+  });
+  $("#hub-back").addEventListener("click", () => showScreen("submit"));
+  $("#hub-query").addEventListener("click", queryHub);
+  $("#hub-name").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") queryHub();
+  });
+
+  $("#pay-qr").addEventListener("error", () => {
+    hide($("#pay-qr"));
+    show($("#pay-qr-fallback"));
   });
 
   // ---------------- 开场 UI：评委天团 / 资料卡 / 背景视频

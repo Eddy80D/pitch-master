@@ -32,6 +32,14 @@ python -m uvicorn app.main:app --reload --port 8000
 - `BG_VIDEO_URL` 为空时用米白渐变兜底；有值时 Hero 自动播放循环静音视频 + 白色半透明遮罩。
 - 零外部依赖：资料卡与页面均无 Google Fonts/CDN。
 
+### 用户中心 + 网页版报告（d3-userhub）
+
+- 提交页底部「老顾客？查看我的舞台记录」→ 输入称呼（留过联系方式需一并填写）→ 历史评审、进步曲线（纯 SVG）、徽章墙。
+- `GET /api/users/{name}/overview?contact=`：联系方式不匹配返回 404；老数据无联系方式时仅凭称呼可查（向后兼容）。
+- 报告页内嵌网页版报告：总分 Hero、维度卡片、问答气泡、证据代码块、失分清单优先级徽章；Markdown 由前端手写渲染器转换，零依赖；解析失败回退原文 + 下载。
+- `GET /api/sessions/{id}/report/data` 返回 markdown + 结构化评分/问答，仅在报告生成后可用。
+- 收款码 `onerror` 显示「收款码挂载中，请呼叫摊主协助」，不出现破图。
+
 ### 轻量注册（D3-growth）
 
 - 提交表单新增「称呼/队名（必填）」与「联系方式（选填）」，无密码、无验证。
@@ -73,6 +81,9 @@ python -m uvicorn app.main:app --reload --port 8000
 | POST | `/api/admin/evade/{id}?token=…` | 标记逃单 |
 | POST | `/api/admin/test/{id}?token=…` | 标为/取消测试单 |
 | GET | `/api/admin/users?token=…` | 注册用户列表（含联系方式） |
+| GET | `/api/users/{name}/overview?contact=…` | 我的舞台记录（联系方式校验） |
+| GET | `/api/sessions/{id}/report/data` | 网页版报告数据（markdown + 评分 + 问答） |
+| GET | `/api/judges` | 评委展示名 / 角色色（开场 UI） |
 
 ## 自测
 
@@ -85,6 +96,7 @@ python scripts/test_d3.py                    # D3：预检/订单持久化/统�
 python scripts/test_polish.py                # D3.5：测试单/自动放行/核验/IP 护栏（不调 API）
 python scripts/test_growth.py                # D3-growth：注册/隐私/成本口径（不调 API）
 python scripts/test_opening_ui.py            # 开场 UI：6 卡/资料卡/零外链/375px（需服务 + Chrome）
+python scripts/test_userhub.py               # 用户中心/报告数据/访问控制（不调 API）
 python scripts/test_timer.py                 # 限时显示：需用短超时启动服务（见脚本头注释）
 python scripts/test_e2e.py                   # T16：浏览器端到端（需 Chrome + playwright，会调真实 API）
 python scripts/business_report.py            # 经营流水与成本分析（纯标准库，零 LLM）
