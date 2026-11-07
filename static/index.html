@@ -94,6 +94,15 @@
   .card p { margin: 0 0 8px; color: var(--muted); font-size: 13px; line-height: 1.6; }
   .card .q-label { color: var(--gold); font-size: 12px; letter-spacing: 1px; margin-bottom: 6px; }
   .card .q-text { color: var(--text); font-size: 16px; line-height: 1.6; margin: 0 0 12px; }
+  .q-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .q-head .q-label { margin-bottom: 0; }
+  .timer { margin-left: auto; color: var(--muted); font-family: var(--mono); font-size: 12px; }
+  .timer.warn { color: var(--red); }
+  .timer-line { margin: 0 0 10px; }
+  .timer-bar { height: 4px; background: #22222b; border-radius: 999px; overflow: hidden; margin: 0 0 12px; }
+  .timer-bar > div { height: 100%; width: 100%; background: var(--gold); transition: width .25s linear; }
+  .timer-bar.warn > div { background: var(--red); }
+  .timer-note { color: var(--red); font-size: 12px; margin: 6px 0 0; }
   .report-link {
     display: inline-block;
     color: #17140b;
@@ -232,21 +241,29 @@
       <div id="intro-box" class="card hidden">
         <h2>先介绍一下你的项目</h2>
         <p>30 秒：做什么、给谁、现在做到什么程度。不写也能过，但评委只能按代码判断。</p>
+        <div class="timer-line"><span id="intro-timer" class="timer"></span></div>
         <textarea id="intro-text" maxlength="500" placeholder="例：我们做了一个面向大学生的 AI 简历优化工具，已上线 3 个模板，日均 200 次调用……"></textarea>
         <div class="actions">
           <button id="intro-submit" type="button">提交介绍</button>
           <button id="intro-skip" class="ghost" type="button">直接宣判</button>
+          <span class="hint">跳过答辩，直接亮椅</span>
           <span id="intro-hint" class="hint"></span>
         </div>
       </div>
 
       <div id="answer-box" class="card hidden">
-        <div class="q-label">评委追问 <span id="q-index"></span></div>
+        <div class="q-head">
+          <div class="q-label">评委追问 <span id="q-index"></span></div>
+          <span id="q-timer" class="timer"></span>
+        </div>
+        <div id="q-timer-bar-wrap" class="timer-bar"><div id="q-timer-bar"></div></div>
         <p id="q-text" class="q-text"></p>
+        <div id="q-timeout-note" class="timer-note hidden">时间到，视为跳过本题</div>
         <textarea id="answer-text" maxlength="2000" placeholder="直接回答，别背稿；说不清就承认，评委更看重边界感……"></textarea>
         <div class="actions">
           <button id="answer-submit" type="button">提交回答</button>
           <button id="answer-skip" class="ghost" type="button">直接宣判</button>
+          <span class="hint">跳过答辩，直接亮椅</span>
           <span id="answer-hint" class="hint"></span>
         </div>
       </div>
@@ -310,6 +327,12 @@
   let paymentRequired = false;
   const cards = new Map();
 
+  // 限时倒计时（本地计时，收到事件时刻为起点）
+  let timerId = null;
+  let timerKind = null;
+  let timerTotal = 0;
+  let timerEnd = 0;
+
   const now = () => new Date().toTimeString().slice(0, 8);
 
   function log(text, cls = "") {
@@ -361,6 +384,75 @@
     $("#answer-submit").disabled = false;
     $("#answer-skip").disabled = false;
     $("#answer-hint").textContent = "";
+  }
+
+  function stopTimer() {
+    if (timerId) {
+      clearInterval(timerId);
+      timerId = null;
+    }
+    timerKind = null;
+
+    const introTimer = $("#intro-timer");
+    if (introTimer) {
+      introTimer.textContent = "";
+      introTimer.classList.remove("warn");
+    }
+    const qTimer = $("#q-timer");
+    if (qTimer) {
+      qTimer.textContent = "";
+      qTimer.classList.remove("warn");
+    }
+    const barWrap = $("#q-timer-bar-wrap");
+    if (barWrap) {
+      barWrap.classList.add("hidden");
+      barWrap.classList.remove("warn");
+    }
+    const bar = $("#q-timer-bar");
+    if (bar) bar.style.width = "0%";
+  }
+
+  function tickTimer() {
+    if (!timerKind) return;
+    const remain = Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000));
+
+    if (timerKind === "intro") {
+      const node = $("#intro-timer");
+      node.textContent = `限时 ${timerTotal} 秒 · 剩余 ${remain}s`;
+      node.classList.toggle("warn", remain <= 5);
+      if (remain <= 0) {
+        clearInterval(timerId);
+        timerId = null;
+        node.textContent = "时间到，自动开问";
+        node.classList.remove("warn");
+        $("#intro-submit").disabled = true;
+      }
+      return;
+    }
+
+    const node = $("#q-timer");
+    node.textContent = `⏱ 本题限时 ${timerTotal} 秒 · 剩余 ${remain}s`;
+    node.classList.toggle("warn", remain <= 10);
+    const barWrap = $("#q-timer-bar-wrap");
+    barWrap.classList.remove("hidden");
+    barWrap.classList.toggle("warn", remain <= 10);
+    $("#q-timer-bar").style.width = `${(remain / timerTotal) * 100}%`;
+    if (remain <= 0) {
+      clearInterval(timerId);
+      timerId = null;
+      node.textContent = "时间到";
+      $("#q-timeout-note").classList.remove("hidden");
+      $("#answer-submit").disabled = true;
+    }
+  }
+
+  function startTimer(kind, seconds) {
+    stopTimer();
+    timerKind = kind;
+    timerTotal = Math.max(1, Math.round(Number(seconds) || 0));
+    timerEnd = Date.now() + timerTotal * 1000;
+    tickTimer();
+    timerId = setInterval(tickTimer, 250);
   }
 
   async function post(path, body) {
@@ -466,6 +558,7 @@
   function finish(failed) {
     if (finished) return;
     finished = true;
+    stopTimer();
     if (source) {
       source.close();
       source = null;
@@ -507,6 +600,7 @@
         if (["deliberation", "reveal", "report", "done"].includes(payload.phase)) {
           hide(introBox);
           hide(answerBox);
+          stopTimer();
         }
         if (payload.phase === "done") finish(false);
         break;
@@ -527,14 +621,16 @@
         log(`评委「${payload.name}」已就位`, "green");
         break;
       case "intro.requested":
-        log("请做自我介绍（30 秒内）", "gold");
+        log(`请做自我介绍（限时 ${payload.timeout_s ?? 30} 秒）`, "gold");
         resetInputs();
         $("#intro-text").value = "";
         show(introBox);
         $("#intro-text").focus();
+        startTimer("intro", payload.timeout_s ?? 30);
         break;
       case "intro.done":
         hide(introBox);
+        stopTimer();
         log(`自我介绍已记录：${(payload.text || "").slice(0, 40)}`);
         break;
       case "qa.start":
@@ -546,18 +642,26 @@
         resetInputs();
         $("#q-index").textContent = `#${payload.index}`;
         $("#q-text").textContent = payload.text || "";
+        $("#q-timeout-note").classList.add("hidden");
         $("#answer-text").value = "";
         show(answerBox);
         $("#answer-text").focus();
+        startTimer("answer", payload.timeout_s ?? 45);
         break;
       case "qa.answer":
+        stopTimer();
         hide(answerBox);
-        log("回答已记录", "green");
+        if ((payload.text || "").includes("超时")) {
+          log("时间到，视为跳过本题", "red");
+        } else {
+          log("回答已记录", "green");
+        }
         break;
       case "qa.reaction":
         log(`「${payload.name}」：${payload.text}`);
         break;
       case "qa.end":
+        stopTimer();
         hide(answerBox);
         log("答辩结束");
         break;
@@ -711,6 +815,7 @@
 
   async function skip() {
     try {
+      stopTimer();
       await post(`/api/sessions/${sessionId}/skip`, {});
       hide(introBox);
       hide(answerBox);

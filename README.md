@@ -42,6 +42,7 @@ python scripts/smoke.py                      # T1：pro 非流式 + flash 流式
 python scripts/test_state_machine.py         # T2/T9：等待点、超时、skip、事件序列
 python scripts/test_full_loop.py             # T16：mock 全流程（不调 API）
 python scripts/test_patch.py                 # D2 补丁：支付/admin/PRD 上限/HTML 提取（不调 API）
+python scripts/test_timer.py                 # 限时显示：需用短超时启动服务（见脚本头注释）
 python scripts/test_e2e.py                   # T16：浏览器端到端（需 Chrome + playwright，会调真实 API）
 ```
 

@@ -190,7 +190,12 @@ async def _run_pipeline(session: state_machine.Session) -> None:
         # ---------------------------------------------------------- 自我介绍
         await session.set_phase("intro")
         status, intro_text = await _wait_with_event(
-            session, events.INTRO_REQUESTED, {}, "intro", 0, config.INTRO_TIMEOUT_S
+            session,
+            events.INTRO_REQUESTED,
+            {"timeout_s": config.INTRO_TIMEOUT_S},
+            "intro",
+            0,
+            config.INTRO_TIMEOUT_S,
         )
         skip_all = status == "skip"
         if status == "ok":
@@ -230,6 +235,7 @@ async def _run_pipeline(session: state_machine.Session) -> None:
                         "name": item["name"],
                         "index": position,
                         "text": item["text"],
+                        "timeout_s": config.QA_ANSWER_TIMEOUT_S,
                     },
                     "answer",
                     position,

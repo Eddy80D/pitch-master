@@ -195,6 +195,12 @@ async def run(mode: str = "normal") -> int:
     for ev in seen[:reveal_at]:
         assert "score" not in ev["payload"], ev
     assert events.INTRO_REQUESTED in types
+    intro_ev = next(ev for ev in seen if ev["type"] == events.INTRO_REQUESTED)
+    assert intro_ev["payload"]["timeout_s"] == config.INTRO_TIMEOUT_S
+    for ev in seen:
+        if ev["type"] == events.QA_QUESTION:
+            assert ev["payload"]["timeout_s"] == config.QA_ANSWER_TIMEOUT_S
+
     if mode == "skip":
         assert types.count(events.QA_QUESTION) == 0
         assert types.count(events.QA_REACTION) == 0
