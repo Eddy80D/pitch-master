@@ -26,7 +26,7 @@ python -m uvicorn app.main:app --reload --port 8000
 ### 开场 UI（d3-opening-ui）
 
 - 顶栏 + Hero 大标题 + 毛玻璃表单面板 + 评委天团 6 卡（5 评委 + 选手）。
-- 评委展示名/角色色来自 `judges.yaml` 的 `display_name` / `color`，评审全流程同步使用新名字（比特 / 商业大亨 / 远见博士 / 摩斯 / 洛克）。
+- 评委展示名/称号/角色色来自 `judges.yaml` 的 `display_name` / `title` / `color`，评审全流程同步使用新名字（比特·毒舌技术官 / 钱滚滚·商业大亨 / 灵点·远见博士 / 摩斯·侦探 / 洛克·美学警察）。
 - 6 张自包含资料卡在 `static/cards/`，点击卡片弹窗 iframe 打开；Esc / 背板关闭。
 - 评委形象图放 `static/judges/{id}.png`（tech/biz/vision/originality/aesthetic）即自动显示；缺图保持果冻问号。
 - `BG_VIDEO_URL` 为空时用米白渐变兜底；有值时 Hero 自动播放循环静音视频 + 白色半透明遮罩。

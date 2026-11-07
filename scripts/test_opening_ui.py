@@ -38,7 +38,9 @@ def static_checks() -> None:
         assert marker not in index, f"index.html 含外链 {marker}"
 
     names = [judge.get("display_name") or judge["name"] for judge in load_judges()]
-    assert names == ["比特", "商业大亨", "远见博士", "摩斯", "洛克"], names
+    assert names == ["比特", "钱滚滚", "灵点", "摩斯", "洛克"], names
+    titles = [judge.get("title", "") for judge in load_judges()]
+    assert titles == ["毒舌技术官", "商业大亨", "远见博士", "侦探", "美学警察"], titles
     print("✅ 静态检查：6 张资料卡存在、零外链、评委展示名正确")
 
 
@@ -60,7 +62,9 @@ def browser_checks(base_url: str) -> None:
         page.wait_for_selector("#judge-lineup .judge-lineup-card", timeout=15000)
 
         names = page.locator("#judge-lineup .card-top").all_inner_texts()
-        assert names == ["比特", "商业大亨", "远见博士", "摩斯", "洛克", "选手"], names
+        assert names == ["比特", "钱滚滚", "灵点", "摩斯", "洛克", "选手"], names
+        titles = page.locator("#judge-lineup .card-bottom").all_inner_texts()
+        assert titles == ["毒舌技术官", "商业大亨", "远见博士", "侦探", "美学警察", "这个位置，是你的"], titles
         assert page.evaluate(
             "getComputedStyle(document.querySelector('.hero-title')).fontSize"
         ) == "72px"

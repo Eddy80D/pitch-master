@@ -623,6 +623,7 @@ async def public_judges() -> dict[str, Any]:
             {
                 "id": judge["id"],
                 "name": judge.get("display_name") or judge.get("name", judge["id"]),
+                "title": judge.get("title", ""),
                 "dimension": judge.get("dimension", ""),
                 "color": judge.get("color", "#3B6FE0"),
             }

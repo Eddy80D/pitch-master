@@ -1621,12 +1621,12 @@
 
   // ---------------- 开场 UI：评委天团 / 资料卡 / 背景视频
   const JUDGE_FALLBACK = [
-    { id: "tech", name: "比特", dimension: "完成度", color: "#4A5568" },
-    { id: "biz", name: "商业大亨", dimension: "商业化", color: "#C94A4A" },
-    { id: "vision", name: "远见博士", dimension: "创新性", color: "#3B6FE0" },
-    { id: "originality", name: "摩斯", dimension: "原创性", color: "#3D9B6A" },
-    { id: "aesthetic", name: "洛克", dimension: "美学", color: "#E75A9C" },
-    { id: "player", name: "选手", dimension: "这个位置，是你的", color: "#8B8D98" },
+    { id: "tech", name: "比特", title: "毒舌技术官", dimension: "完成度", color: "#4A5568" },
+    { id: "biz", name: "钱滚滚", title: "商业大亨", dimension: "商业化", color: "#C94A4A" },
+    { id: "vision", name: "灵点", title: "远见博士", dimension: "创新性", color: "#3B6FE0" },
+    { id: "originality", name: "摩斯", title: "侦探", dimension: "原创性", color: "#3D9B6A" },
+    { id: "aesthetic", name: "洛克", title: "美学警察", dimension: "美学", color: "#E75A9C" },
+    { id: "player", name: "选手", title: "这个位置，是你的", dimension: "这个位置，是你的", color: "#8B8D98" },
   ];
 
   function shadeColor(hex, factor = 0.3) {
@@ -1658,7 +1658,7 @@
       image.addEventListener("error", () => image.remove());
       body.append(image);
     }
-    card.append(body, el("div", "card-bottom", item.dimension));
+    card.append(body, el("div", "card-bottom", item.title || item.dimension || ""));
     card.addEventListener("click", () => openCard(item.id));
     return card;
   }
