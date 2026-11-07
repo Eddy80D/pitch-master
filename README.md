@@ -32,6 +32,13 @@ python -m uvicorn app.main:app --reload --port 8000
 - `BG_VIDEO_URL` 为空时用米白渐变兜底；有值时 Hero 自动播放循环静音视频 + 白色半透明遮罩。
 - 零外部依赖：资料卡与页面均无 Google Fonts/CDN。
 
+### 品牌资产（d4-brand）
+
+- 顶栏 logo：`static/brand/logo-text-trim.png`（原图裁掉空白后使用），加载失败回退文字。
+- Hero 吉祥物：`static/brand/mascot.png`，3s 上下浮动；移动端 48px。
+- favicon：`static/brand/mascot-64.png`，index / admin 同步。
+- 收款码：`PAY_QR_URL` 可填外部图片地址，为空时回退 `/static/pay_qr.png`。
+
 ### 提交日打磨（d4-stage-polish）
 
 - **解剖前置**：提交 → 预检 → 解剖（真实 LLM）→ 悬念卡（项目概述 + 疑点数量 + 1 条预览）→ 付款 → 老板人工放行 → 评审。付款前不显示收款区；坏仓库在收费前报错。
@@ -107,6 +114,8 @@ python -m uvicorn app.main:app --reload --port 8000
 | POST | `/api/auth/register` | 正式注册（称呼唯一） |
 | POST | `/api/auth/login` | 登录（联系方式匹配） |
 | POST | `/api/prd/extract` | 上传 PRD 并提取文本 |
+
+发布验收：`python scripts/verify_deploy.py https://<domain>`。
 
 ## 自测
 
