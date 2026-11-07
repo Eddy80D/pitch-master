@@ -211,6 +211,9 @@ async def run(mode: str = "normal") -> int:
     else:
         assert types.count(events.QA_QUESTION) == config.QA_MAX_QUESTIONS
         assert types.count(events.QA_REACTION) == config.QA_MAX_QUESTIONS
+        for ev in seen:
+            if ev["type"] == events.QA_ANSWER:
+                assert ev["payload"]["reason"] == "user", ev
         roles = [item["role"] for item in session.transcript]
         assert roles.count("judge_q") == config.QA_MAX_QUESTIONS
         assert roles.count("user_a") == config.QA_MAX_QUESTIONS

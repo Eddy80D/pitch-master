@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -21,7 +22,7 @@ for stream in (sys.stdout, sys.stderr):
 
 from fastapi import HTTPException  # noqa: E402
 
-from app import config, main, state_machine  # noqa: E402
+from app import config, main, orders, state_machine  # noqa: E402
 from app.agents import judges  # noqa: E402
 from app.repo_loader import _VisibleTextParser, _is_private_host  # noqa: E402
 from app.schemas import EvidencePack  # noqa: E402
@@ -126,6 +127,15 @@ async def test_payment_and_admin() -> None:
     original_pipeline = main._run_pipeline
     original_required = config.PAYMENT_REQUIRED
     original_token = config.ADMIN_TOKEN
+    original_precheck = config.PRECHECK_ENABLED
+    original_orders_file = config.ORDERS_FILE
+    original_summary_file = config.ORDERS_SUMMARY_FILE
+
+    tmpdir = Path(tempfile.mkdtemp(prefix="pm_orders_"))
+    config.ORDERS_FILE = tmpdir / "orders.jsonl"
+    config.ORDERS_SUMMARY_FILE = tmpdir / "orders_summary.json"
+    orders.store._orders.clear()
+    orders.store._loaded = True
 
     async def fake_pipeline(session):
         await session.set_phase("loading")
@@ -134,6 +144,7 @@ async def test_payment_and_admin() -> None:
 
     main._run_pipeline = fake_pipeline
     config.PAYMENT_REQUIRED = True
+    config.PRECHECK_ENABLED = False
     config.ADMIN_TOKEN = "test-token"
     state_machine.store._sessions.clear()
 
@@ -158,8 +169,8 @@ async def test_payment_and_admin() -> None:
 
         await main.mark_paid(session_id)
         assert session.paid_status == "pending"
-        orders = await main.admin_orders(token="test-token")
-        assert any(item["id"] == session_id for item in orders["orders"])
+        order_list = await main.admin_orders(token="test-token")
+        assert any(item["order_id"] == session_id for item in order_list["orders"])
 
         try:
             await main.admin_approve(session_id, token="wrong")
@@ -195,7 +206,15 @@ async def test_payment_and_admin() -> None:
     finally:
         main._run_pipeline = original_pipeline
         config.PAYMENT_REQUIRED = original_required
+        config.PRECHECK_ENABLED = original_precheck
         config.ADMIN_TOKEN = original_token
+        config.ORDERS_FILE = original_orders_file
+        config.ORDERS_SUMMARY_FILE = original_summary_file
+        orders.store._orders.clear()
+        orders.store._loaded = False
+        import shutil
+
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 async def main_test() -> int:

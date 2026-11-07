@@ -46,9 +46,20 @@ PAYMENT_REQUIRED: bool = os.getenv("PAYMENT_REQUIRED", "True").lower() in {
 # 为空则 admin 接口全部 404
 ADMIN_TOKEN: str = os.getenv("ADMIN_TOKEN", "")
 
+# —— D3 营业版 ——
+# 先尝后买：提交后先零 token 预检，再收费；关掉则回到"提交即收款"
+PRECHECK_ENABLED: bool = os.getenv("PRECHECK_ENABLED", "True").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+PRICE_YUAN: float = float(os.getenv("PRICE_YUAN", "19.9"))
+
 LOG_DIR: Path = _path_env("LOG_DIR", ROOT / "logs")
 USAGE_FILE: Path = LOG_DIR / "usage.jsonl"
 SESSIONS_DIR: Path = LOG_DIR / "sessions"
+ORDERS_FILE: Path = LOG_DIR / "orders.jsonl"
+ORDERS_SUMMARY_FILE: Path = LOG_DIR / "orders_summary.json"
 REPORTS_DIR: Path = _path_env("REPORTS_DIR", ROOT / "reports")
 
 JUDGES_FILE: Path = ROOT / "judges.yaml"

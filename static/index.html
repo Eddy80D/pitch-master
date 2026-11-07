@@ -219,8 +219,14 @@
       <div class="hint">仓库以浅克隆方式读取，只读不写。演示模式默认 4 问、每问 45 秒。</div>
     </form>
 
+    <div id="precheck-box" class="card hidden">
+      <h2>预检完成 · 先尝后买</h2>
+      <p id="precheck-text"></p>
+      <div id="precheck-stats" class="hint"></div>
+    </div>
+
     <div id="pay-box" class="card hidden">
-      <p class="pay-title">扫码支付后开始评审</p>
+      <p id="pay-title" class="pay-title">扫码支付后开始评审</p>
       <img id="pay-qr" src="/static/pay_qr.png" alt="收款码">
       <div class="actions" style="justify-content:center">
         <button id="paid-btn" type="button">我已支付</button>
@@ -319,6 +325,7 @@
   const introBox = $("#intro-box");
   const answerBox = $("#answer-box");
   const payBox = $("#pay-box");
+  const precheckBox = $("#precheck-box");
 
   let source = null;
   let sessionId = null;
@@ -527,6 +534,20 @@
     );
   }
 
+  function renderPrecheck(payload) {
+    showScreen("submit");
+    hide(form);
+    show(precheckBox);
+    hide(payBox);
+    const total = payload.files_read ?? 0;
+    const suspicious = payload.suspicious_count ?? 0;
+    $("#precheck-text").textContent = suspicious > 0
+      ? `已读取 ${total} 个文件，发现 ${suspicious} 处值得评委深挖的疑点……付费 ¥${payload.price ?? 19.9}，让五位评委告诉你它们是什么。`
+      : `已读取 ${total} 个文件，暂未发现明显异常——但评委可能看到你没注意的问题。付费 ¥${payload.price ?? 19.9} 开始评审。`;
+    $("#precheck-stats").textContent =
+      `${payload.repo_name || ""} · ${payload.chars ?? 0} 字符 · 跳过 ${payload.files_skipped ?? 0} 个文件`;
+  }
+
   function renderReport(data) {
     const totals = data.totals || {};
     const delta = Number(totals.delta ?? 0);
@@ -577,9 +598,14 @@
       case "session.created":
         log(`会话 ${payload.session_id} 已创建`, "gold");
         break;
+      case "precheck.done":
+        renderPrecheck(payload);
+        break;
       case "payment.waiting":
         showScreen("submit");
+        hide(form);
         show(payBox);
+        $("#pay-title").textContent = `扫码支付 ¥${payload.price ?? 19.9} 后开始评审`;
         $("#pay-hint").textContent = "扫码支付后点「我已支付」，老板放行后自动开跑。";
         break;
       case "payment.pending":
@@ -589,6 +615,8 @@
         break;
       case "payment.approved":
         hide(payBox);
+        hide(precheckBox);
+        showScreen("stage");
         log("老板已放行，评审开始", "gold");
         break;
       case "phase.changed":
@@ -651,8 +679,10 @@
       case "qa.answer":
         stopTimer();
         hide(answerBox);
-        if ((payload.text || "").includes("超时")) {
+        if (payload.reason === "timeout") {
           log("时间到，视为跳过本题", "red");
+        } else if (payload.reason === "skip") {
+          log("已跳过本题", "red");
         } else {
           log("回答已记录", "green");
         }
@@ -688,6 +718,12 @@
         break;
       case "error":
         log(`[${payload.stage}] ${payload.msg}`, "red");
+        if (payload.stage === "precheck") {
+          showScreen("submit");
+          show(form);
+          hide(precheckBox);
+          hide(payBox);
+        }
         if (!payload.degraded) finish(true);
         break;
       default:
@@ -722,18 +758,34 @@
       const resp = await fetch(`/api/sessions/${id}`);
       if (!resp.ok) throw new Error("会话不存在");
       const snap = await resp.json();
-      showScreen(screenForPhase(snap.phase));
       setPhase(snap.phase);
-      if (snap.paid_status === "unpaid") {
+      hide(form);
+      hide(precheckBox);
+      hide(payBox);
+
+      if (snap.phase === "created") {
         showScreen("submit");
-        show(payBox);
-        $("#pay-hint").textContent = "扫码支付后点「我已支付」。";
-      } else if (snap.paid_status === "pending") {
-        showScreen("submit");
-        show(payBox);
-        $("#pay-hint").textContent = "已通知老板，等待放行…";
-        $("#paid-btn").disabled = true;
+        if (snap.precheck_done) {
+          renderPrecheck({ ...(snap.precheck_stats || {}), price: snap.price });
+          if (snap.paid_status === "unpaid") {
+            show(payBox);
+            $("#pay-title").textContent = `扫码支付 ¥${snap.price ?? 19.9} 后开始评审`;
+            $("#pay-hint").textContent = "扫码支付后点「我已支付」。";
+          } else if (snap.paid_status === "pending") {
+            show(payBox);
+            $("#pay-title").textContent = `扫码支付 ¥${snap.price ?? 19.9} 后开始评审`;
+            $("#pay-hint").textContent = "已通知老板，等待放行…";
+            $("#paid-btn").disabled = true;
+          }
+        } else {
+          show(precheckBox);
+          $("#precheck-text").textContent = "正在预检仓库（零 token，不调用模型）…";
+          $("#precheck-stats").textContent = "";
+        }
+      } else {
+        showScreen(screenForPhase(snap.phase));
       }
+
       if (snap.phase === "report" || snap.phase === "done") {
         renderReport({
           totals: snap.totals || {},
@@ -774,9 +826,18 @@
       sessionId = data.session_id;
       paymentRequired = Boolean(data.payment_required);
       history.replaceState(null, "", `?s=${sessionId}`);
-      if (paymentRequired) {
+      if (data.precheck) {
         setPhase("created");
         showScreen("submit");
+        hide(form);
+        show(precheckBox);
+        hide(payBox);
+        $("#precheck-text").textContent = "正在预检仓库（零 token，不调用模型）…";
+        $("#precheck-stats").textContent = "";
+      } else if (paymentRequired) {
+        setPhase("created");
+        showScreen("submit");
+        hide(form);
         show(payBox);
         $("#pay-hint").textContent = "扫码支付后点「我已支付」，老板放行后自动开跑。";
         $("#paid-btn").disabled = false;

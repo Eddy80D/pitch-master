@@ -65,6 +65,13 @@ class Session:
         self.prd_text: str = ""
         self.demo_text: str = ""
 
+        # D3：预检（零 token）
+        self.precheck_done = False
+        self.precheck_stats: dict[str, Any] = {}
+        self.precheck_error: str = ""
+        self.repo_text: str = ""
+        self.price: float = config.PRICE_YUAN
+
         # P0-4：支付与老板后台
         self.paid_status = "unpaid"  # unpaid → pending → approved
         self.owner_comment = ""
@@ -217,6 +224,9 @@ class Session:
             report_ready=self.report_ready,
             paid_status=self.paid_status,
             owner_comment=self.owner_comment,
+            precheck_done=self.precheck_done,
+            precheck_stats=self.precheck_stats,
+            price=self.price,
             totals=(
                 score_totals(self.verdict_initial, self.verdict_final)
                 if self.verdict_final
@@ -255,8 +265,16 @@ class SessionStore:
     def __init__(self) -> None:
         self._sessions: dict[str, Session] = {}
 
-    def create(self, repo_url: str, prd: str | None = None, demo_url: str | None = None) -> Session:
+    def create(
+        self,
+        repo_url: str,
+        prd: str | None = None,
+        demo_url: str | None = None,
+        session_id: str | None = None,
+    ) -> Session:
         session = Session(repo_url=repo_url, prd=prd, demo_url=demo_url)
+        if session_id:
+            session.id = session_id
         self._sessions[session.id] = session
         return session
 

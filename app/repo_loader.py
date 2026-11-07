@@ -387,6 +387,28 @@ def fetch_demo_page(url: str) -> str:
     return text[:20_000]
 
 
+SUSPICIOUS_PATTERNS = [
+    re.compile(r"忽略.{0,12}指令", re.I),
+    re.compile(r"ignore\s+(all\s+)?(previous\s+)?instructions", re.I),
+    re.compile(r"(请|给我|求|务必).{0,8}满分", re.I),
+    re.compile(r"give\s+(me\s+)?(a\s+)?(full|100)\s*(score|marks|分)?", re.I),
+    re.compile(r"100\s*(分|score|marks)", re.I),
+]
+
+
+def scan_suspicious(text: str) -> int:
+    """预检用轻量注入扫描：只计数，正式检测仍在解剖员。"""
+    return sum(len(pattern.findall(text or "")) for pattern in SUSPICIOUS_PATTERNS)
+
+
+def repo_name(repo_url: str) -> str:
+    try:
+        owner, repo = _github_parts(repo_url)
+        return f"{owner}/{repo}"
+    except ValueError:
+        return repo_url.rstrip("/").split("/")[-1] or repo_url
+
+
 def load_repository(repo_url: str) -> dict:
     """同步入口（调用方用 asyncio.to_thread 包一层）。"""
     try:

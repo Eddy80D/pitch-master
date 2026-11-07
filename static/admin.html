@@ -6,55 +6,117 @@
 <link rel="icon" href="data:,">
 <title>老板后台 · PitchMaster</title>
 <style>
-  :root { --bg:#0a0a0c; --panel:#14141a; --line:#282832; --text:#ececf1; --muted:#8b8b99; --gold:#d9b45b; --green:#58c08a; --red:#e06a6a; }
+  :root { --bg:#0a0a0c; --panel:#14141a; --line:#282832; --text:#ececf1; --muted:#8b8b99; --gold:#d9b45b; --green:#58c08a; --red:#e06a6a; --blue:#6a9fe0; }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
-  main { max-width:860px; margin:0 auto; padding:40px 20px 80px; }
+  main { max-width:1040px; margin:0 auto; padding:36px 20px 80px; }
   h1 { font-size:24px; margin:0 0 6px; }
   h1 span { color:var(--gold); }
-  .sub { color:var(--muted); font-size:13px; margin:0 0 24px; }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:12px; }
+  .sub { color:var(--muted); font-size:13px; margin:0 0 20px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:12px; }
   .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .repo { font-family:ui-monospace,Consolas,monospace; font-size:13px; word-break:break-all; }
   .id { color:var(--muted); font-size:11px; font-family:ui-monospace,Consolas,monospace; }
-  .badge { margin-left:auto; font-size:11px; padding:2px 8px; border-radius:999px; font-family:ui-monospace,Consolas,monospace; }
-  .badge.pending { color:var(--gold); background:rgba(217,180,91,.12); }
+  .badge { font-size:11px; padding:2px 8px; border-radius:999px; font-family:ui-monospace,Consolas,monospace; }
   .badge.unpaid { color:var(--muted); background:#1b1b23; }
-  button { background:var(--gold); color:#17140b; border:0; border-radius:8px; padding:8px 16px; font-weight:700; cursor:pointer; }
+  .badge.pending { color:var(--gold); background:rgba(217,180,91,.12); }
+  .badge.approved,.badge.running { color:var(--blue); background:rgba(106,159,224,.12); }
+  .badge.done { color:var(--green); background:rgba(88,192,138,.12); }
+  .badge.failed,.badge.reworked { color:var(--red); background:rgba(224,106,106,.12); }
+  button { background:var(--gold); color:#17140b; border:0; border-radius:8px; padding:8px 14px; font-weight:700; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); font-weight:500; }
+  button.danger { background:var(--red); color:#1a0b0b; }
   button:disabled { opacity:.4; cursor:not-allowed; }
-  textarea { width:100%; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:10px; min-height:56px; font-family:inherit; resize:vertical; }
-  .actions { display:flex; gap:8px; margin-top:8px; align-items:center; }
+  input, textarea { background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:9px 10px; font-family:inherit; }
+  textarea { width:100%; min-height:56px; resize:vertical; }
   .hint { color:var(--muted); font-size:12px; }
   .empty { color:var(--muted); text-align:center; padding:40px; border:1px dashed var(--line); border-radius:12px; }
-  #token-bar { display:flex; gap:8px; margin-bottom:20px; }
-  #token-bar input { flex:1; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px; }
   .error { color:var(--red); font-size:13px; margin-top:8px; }
+  #token-bar { display:flex; gap:8px; margin-bottom:20px; }
+  #token-bar input { flex:1; }
+
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; }
+  .tile { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .tile .k { color:var(--muted); font-size:11px; }
+  .tile .v { font-size:22px; font-family:ui-monospace,Consolas,monospace; margin-top:4px; }
+  .charts { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+  .chart-box { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px; }
+  .chart-title { color:var(--muted); font-size:11px; margin-bottom:4px; }
+  svg { width:100%; height:130px; display:block; }
+
+  .order-time { color:var(--muted); font-size:11px; font-family:ui-monospace,Consolas,monospace; }
+  .order-repo { flex:1; min-width:220px; }
+  .flag { color:var(--gold); font-size:12px; }
+
+  #drawer { position:fixed; inset:0; background:rgba(0,0,0,.65); display:flex; justify-content:flex-end; z-index:10; }
+  #drawer.hidden { display:none; }
+  .drawer-panel { width:min(680px,100%); height:100%; overflow-y:auto; background:var(--panel); border-left:1px solid var(--line); padding:22px; }
+  .drawer-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .drawer-head h2 { font-size:18px; margin:0; }
+  .kv { color:var(--muted); font-size:12px; line-height:1.9; }
+  .transcript { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; font-size:13px; line-height:1.7; }
+  .transcript .who { color:var(--gold); }
+  .transcript .ans { color:#c9c9d2; margin-bottom:8px; }
+  .transcript .react { color:var(--muted); font-size:12px; margin-bottom:12px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; margin:8px 0 16px; }
+  th,td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+  th { color:var(--muted); font-weight:500; }
+  @media (max-width:720px) { .charts { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <main>
   <h1>老板<span>后台</span></h1>
-  <p class="sub">待放行订单 · 手动放行后评审才会开始。每 3 秒自动刷新。</p>
+  <p class="sub">营收 / 订单 / 质检 · 每 3 秒自动刷新</p>
 
   <div id="token-bar">
     <input id="token" placeholder="ADMIN_TOKEN">
     <button id="save-token" type="button">确定</button>
   </div>
 
+  <section id="dashboard" class="card hidden">
+    <div id="tiles" class="tiles"></div>
+    <div class="charts">
+      <div class="chart-box">
+        <div class="chart-title">近 12 小时成交单数</div>
+        <svg id="bar-chart" viewBox="0 0 520 130" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">累计营业额（元）</div>
+        <svg id="line-chart" viewBox="0 0 520 130" preserveAspectRatio="none"></svg>
+      </div>
+    </div>
+  </section>
+
   <div id="orders"></div>
 </main>
+
+<div id="drawer" class="hidden">
+  <div class="drawer-panel">
+    <div class="drawer-head">
+      <h2>订单详情</h2>
+      <button id="close-drawer" class="ghost" type="button" style="margin-left:auto">关闭</button>
+    </div>
+    <div id="detail"></div>
+  </div>
+</div>
+
 <script>
 (() => {
   const $ = (s) => document.querySelector(s);
   const params = new URLSearchParams(location.search);
   let token = params.get("token") || "";
+  let drawerId = null;
 
   $("#token").value = token;
-
   $("#save-token").addEventListener("click", () => {
     token = $("#token").value.trim();
     history.replaceState(null, "", `?token=${encodeURIComponent(token)}`);
     load();
+  });
+  $("#close-drawer").addEventListener("click", () => {
+    drawerId = null;
+    $("#drawer").classList.add("hidden");
   });
 
   function el(tag, cls, text) {
@@ -67,70 +129,312 @@
   async function api(path, options) {
     const sep = path.includes("?") ? "&" : "?";
     const resp = await fetch(`${path}${sep}token=${encodeURIComponent(token)}`, options);
-    if (!resp.ok) throw new Error(resp.status === 404 ? "Token 错误或后台未启用" : `HTTP ${resp.status}`);
+    if (!resp.ok) {
+      let detail = `HTTP ${resp.status}`;
+      if (resp.status === 404) detail = "Token 错误或后台未启用";
+      throw new Error(detail);
+    }
     return resp.json();
+  }
+
+  const STATUS_LABEL = {
+    unpaid: "待付", pending: "待放行", approved: "已放行",
+    running: "评审中", done: "已完成", failed: "失败", reworked: "已重审",
+  };
+
+  function fmtTime(ts) {
+    if (!ts) return "-";
+    const d = new Date(ts * 1000);
+    return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+
+  // ---------------- 图表：纯 SVG，无外部依赖
+  function barChart(data) {
+    const svg = $("#bar-chart");
+    const W = 520, H = 130, padL = 24, padB = 20, padT = 8;
+    const max = Math.max(1, ...data.map((d) => d.count));
+    const bw = (W - padL - 8) / data.length;
+    const parts = [`<line x1="${padL}" y1="${H - padB}" x2="${W - 4}" y2="${H - padB}" stroke="#282832"/>`];
+    data.forEach((d, i) => {
+      const h = (d.count / max) * (H - padB - padT);
+      const x = padL + i * bw + bw * 0.2;
+      const y = H - padB - h;
+      parts.push(`<rect x="${x}" y="${y}" width="${bw * 0.6}" height="${h}" fill="${d.count ? "#d9b45b" : "#22222b"}"/>`);
+      if (i % 2 === 0) parts.push(`<text x="${x + bw * 0.3}" y="${H - 6}" fill="#8b8b99" font-size="9" text-anchor="middle">${d.hour}</text>`);
+      if (d.count) parts.push(`<text x="${x + bw * 0.3}" y="${Math.max(10, y - 3)}" fill="#ececf1" font-size="9" text-anchor="middle">${d.count}</text>`);
+    });
+    svg.innerHTML = parts.join("");
+  }
+
+  function lineChart(data) {
+    const svg = $("#line-chart");
+    const W = 520, H = 130, padL = 24, padB = 20, padT = 10;
+    const values = data.map((d) => d.value);
+    const max = Math.max(1, ...values);
+    const step = (W - padL - 8) / Math.max(1, data.length - 1);
+    const points = data.map((d, i) => {
+      const x = padL + i * step;
+      const y = H - padB - (d.value / max) * (H - padB - padT);
+      return `${x},${y}`;
+    });
+    const parts = [
+      `<line x1="${padL}" y1="${H - padB}" x2="${W - 4}" y2="${H - padB}" stroke="#282832"/>`,
+      `<polyline points="${points.join(" ")}" fill="none" stroke="#58c08a" stroke-width="2"/>`,
+    ];
+    data.forEach((d, i) => {
+      if (i % 2 === 0) parts.push(`<text x="${padL + i * step}" y="${H - 6}" fill="#8b8b99" font-size="9" text-anchor="middle">${d.hour}</text>`);
+    });
+    parts.push(`<text x="${padL}" y="${padT}" fill="#8b8b99" font-size="9">峰值 ${max.toFixed(0)} 元</text>`);
+    svg.innerHTML = parts.join("");
+  }
+
+  function renderStats(stats) {
+    const tiles = [
+      ["今日成交", `${stats.today_count} 单`],
+      ["今日营业额", `¥${stats.today_revenue}`],
+      ["累计成交", `${stats.total_count} 单`],
+      ["累计营业额", `¥${stats.total_revenue}`],
+      ["待放行", `${stats.pending_count} 单`],
+      ["重审单", `${stats.rework_count} 单`],
+      ["建议抽检", `${stats.suggested_count} 单`],
+    ];
+    $("#tiles").replaceChildren(...tiles.map(([k, v]) => {
+      const tile = el("div", "tile");
+      tile.append(el("div", "k", k), el("div", "v", v));
+      return tile;
+    }));
+    barChart(stats.hourly || []);
+    lineChart(stats.cumulative || []);
+  }
+
+  // ---------------- 订单列表
+  function renderOrders(list) {
+    const box = $("#orders");
+    if (!list.length) {
+      box.replaceChildren(el("div", "empty", "暂无订单"));
+      return;
+    }
+    box.replaceChildren(...list.map((order) => {
+      const card = el("div", "card");
+      const row = el("div", "row");
+      row.append(
+        el("span", "order-time", fmtTime(order.created_at)),
+        el("span", "repo order-repo", order.repo_url),
+        el("span", "id", order.order_id),
+        el("span", `badge ${order.status}`, STATUS_LABEL[order.status] || order.status),
+        el("span", "hint", `¥${order.price}`)
+      );
+      if (order.qa_suggested) row.append(el("span", "flag", "⚑ 建议抽检"));
+      if (order.qa_mark === "rework") row.append(el("span", "flag", "已打回"));
+
+      const approveBtn = el("button", "", "放行");
+      approveBtn.disabled = order.status !== "pending";
+      approveBtn.addEventListener("click", () => approve(order.order_id));
+      row.append(approveBtn);
+
+      const detailBtn = el("button", "ghost", "详情");
+      detailBtn.addEventListener("click", () => openDetail(order.order_id));
+      row.append(detailBtn);
+
+      card.append(row);
+      if (order.owner_comment) {
+        card.append(el("div", "hint", `老板亲签：${order.owner_comment}`));
+      }
+      return card;
+    }));
   }
 
   async function approve(id) {
     try {
       await api(`/api/admin/approve/${id}`, { method: "POST" });
-      load();
+      await load();
+    } catch (err) { alert(err.message); }
+  }
+
+  // ---------------- 详情 + 质检
+  function renderTranscript(transcript) {
+    const box = el("div", "transcript");
+    if (!transcript || !transcript.length) {
+      box.textContent = "（无问答记录）";
+      return box;
+    }
+    for (const item of transcript) {
+      if (item.role === "user_intro") {
+        box.append(el("div", "who", "自我介绍"), el("div", "ans", item.text || ""));
+      } else if (item.role === "judge_q") {
+        box.append(el("div", "who", `Q${item.index || ""} · ${item.judge_name || ""}`), el("div", "ans", item.text || ""));
+      } else if (item.role === "user_a") {
+        box.append(el("div", "who", "回答"), el("div", "ans", item.text || ""));
+      } else if (item.role === "judge_reaction") {
+        box.append(el("div", "react", `↳ ${item.judge_name || "评委"}：${item.text || ""}`));
+      }
+    }
+    return box;
+  }
+
+  function renderVerdictTable(initial, final) {
+    const table = el("table");
+    const head = el("tr");
+    ["评委", "初评", "终评", "转身", "终评理由"].forEach((text) => head.append(el("th", "", text)));
+    table.append(head);
+    const initialMap = {};
+    (initial || []).forEach((item) => { initialMap[item.judge_id] = item; });
+    (final || []).forEach((item) => {
+      const row = el("tr");
+      const init = initialMap[item.judge_id] || {};
+      row.append(
+        el("td", "", `${item.name || ""} / ${item.dimension || ""}`),
+        el("td", "", `${init.score ?? "-"} / ${item.weight ?? ""}`),
+        el("td", "", `${item.final_score ?? "-"} / ${item.weight ?? ""}`),
+        el("td", "", item.degraded ? "缺席" : (item.final_verdict === "turn" ? "转身" : "留座")),
+        el("td", "", item.reason || "")
+      );
+      table.append(row);
+    });
+    return table;
+  }
+
+  async function openDetail(id) {
+    drawerId = id;
+    $("#drawer").classList.remove("hidden");
+    $("#detail").replaceChildren(el("div", "hint", "加载中…"));
+    try {
+      const data = await api(`/api/admin/orders/${id}`);
+      renderDetail(data);
     } catch (err) {
-      alert(err.message);
+      $("#detail").replaceChildren(el("div", "error", err.message));
     }
   }
 
-  async function saveComment(id, text) {
+  function renderDetail(data) {
+    const { order, session } = data;
+    const box = $("#detail");
+    box.replaceChildren();
+
+    box.append(el("div", "kv", `订单 ${order.order_id} · 状态 ${STATUS_LABEL[order.status] || order.status} · ¥${order.price}`));
+    box.append(el("div", "kv", `仓库 ${order.repo_url}`));
+    if (order.qa_suggested && order.qa_suggest_reasons?.length) {
+      box.append(el("div", "flag", `⚑ 建议抽检：${order.qa_suggest_reasons.join("；")}`));
+    }
+    if (order.rework_of) {
+      box.append(el("div", "hint", `重审自 ${order.rework_of}｜原因：${order.rework_reason || "-"}`));
+    }
+
+    // 老板评语
+    box.append(el("div", "chart-title", "老板亲签评语"));
+    const comment = el("textarea");
+    comment.value = order.owner_comment || "";
+    const saveComment = el("button", "", "保存评语");
+    saveComment.addEventListener("click", async () => {
+      try {
+        await api(`/api/admin/comment/${order.order_id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: comment.value }),
+        });
+        saveComment.textContent = "已保存";
+        setTimeout(() => { saveComment.textContent = "保存评语"; }, 1200);
+      } catch (err) { alert(err.message); }
+    });
+    box.append(comment, el("div", "row"), saveComment);
+
+    // 质检
+    box.append(el("div", "chart-title", "质检"));
+    const qaRow = el("div", "row");
+    const passBtn = el("button", "", "质检通过");
+    passBtn.addEventListener("click", () => markQa(order.order_id, "pass", ""));
+    const reworkBtn = el("button", "danger", "打回");
+    reworkBtn.addEventListener("click", () => {
+      const reason = prompt("打回原因（必填）");
+      if (reason && reason.trim()) markQa(order.order_id, "rework", reason.trim());
+    });
+    qaRow.append(passBtn, reworkBtn);
+    if (order.qa_mark === "rework" && order.status !== "reworked") {
+      const freeBtn = el("button", "", "免费重审");
+      freeBtn.addEventListener("click", () => rework(order.order_id));
+      qaRow.append(freeBtn);
+    }
+    if (order.qa_mark !== "none") {
+      qaRow.append(el("span", "hint", `当前：${order.qa_mark === "pass" ? "通过" : "已打回"}`));
+    }
+    if (order.refunded) {
+      qaRow.append(el("span", "hint", "已标记退款（线下原路退）"));
+    } else {
+      const refundBtn = el("button", "ghost", "标记退款");
+      refundBtn.addEventListener("click", () => refund(order.order_id));
+      qaRow.append(refundBtn);
+    }
+    box.append(qaRow);
+
+    // 报告
+    if (session?.report_ready) {
+      const link = el("a", "hint", "下载报告");
+      link.href = `/api/sessions/${order.order_id}/report`;
+      link.target = "_blank";
+      link.style.display = "inline-block";
+      link.style.margin = "10px 0";
+      box.append(link);
+    }
+
+    // 评审明细
+    box.append(el("div", "chart-title", "各评委初评 / 终评"));
+    box.append(renderVerdictTable(session?.verdict_initial, session?.verdict_final));
+
+    box.append(el("div", "chart-title", "答辩实录"));
+    box.append(renderTranscript(session?.transcript));
+  }
+
+  async function markQa(id, mark, reason) {
     try {
-      await api(`/api/admin/comment/${id}`, {
+      await api(`/api/admin/qa/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ mark, reason }),
       });
-      alert("评语已保存");
-    } catch (err) {
-      alert(err.message);
-    }
+      await load();
+      await openDetail(id);
+    } catch (err) { alert(err.message); }
   }
 
+  async function refund(id) {
+    if (!confirm("确认标记为已退款？仅记录状态，退款需线下原路操作。")) return;
+    try {
+      await api(`/api/admin/refund/${id}`, { method: "POST" });
+      await load();
+      await openDetail(id);
+    } catch (err) { alert(err.message); }
+  }
+
+  async function rework(id) {
+    try {
+      const data = await api(`/api/admin/rework/${id}`, { method: "POST" });
+      alert(`已创建免费重审单：${data.session_id}`);
+      await load();
+      await openDetail(id);
+    } catch (err) { alert(err.message); }
+  }
+
+  // ---------------- 轮询
   async function load() {
     const box = $("#orders");
     if (!token) {
+      $("#dashboard").classList.add("hidden");
       box.replaceChildren(el("div", "empty", "请先填写 ADMIN_TOKEN"));
       return;
     }
     try {
-      const data = await api("/api/admin/orders");
-      const orders = data.orders || [];
-      if (!orders.length) {
-        box.replaceChildren(el("div", "empty", "暂无待放行订单"));
-        return;
+      const [stats, ordersData] = await Promise.all([
+        api("/api/admin/stats"),
+        api("/api/admin/orders"),
+      ]);
+      $("#dashboard").classList.remove("hidden");
+      renderStats(stats);
+      renderOrders(ordersData.orders || []);
+      if (drawerId) {
+        try { const detail = await api(`/api/admin/orders/${drawerId}`); renderDetail(detail); } catch (e) { /* ignore */ }
       }
-      box.replaceChildren(...orders.map((order) => {
-        const card = el("div", "card");
-        const row = el("div", "row");
-        row.append(
-          el("span", "repo", order.repo_url),
-          el("span", "id", order.id),
-          el("span", `badge ${order.paid_status}`,
-             order.paid_status === "pending" ? "待放行" : "未支付")
-        );
-        const approveBtn = el("button", "", "放行");
-        approveBtn.disabled = order.paid_status !== "pending";
-        approveBtn.addEventListener("click", () => approve(order.id));
-        row.append(approveBtn);
-
-        const comment = el("textarea");
-        comment.placeholder = "老板亲签评语（可选，会显示在报告页顶部）";
-        const saveBtn = el("button", "", "保存评语");
-        saveBtn.addEventListener("click", () => saveComment(order.id, comment.value));
-        const actions = el("div", "actions");
-        actions.append(saveBtn, el("span", "hint", "放行后评语仍可补写"));
-
-        card.append(row, comment, actions);
-        return card;
-      }));
     } catch (err) {
+      $("#dashboard").classList.add("hidden");
       box.replaceChildren(el("div", "empty error", err.message));
     }
   }

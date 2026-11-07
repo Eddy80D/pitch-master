@@ -20,7 +20,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Str
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config, events, repo_loader, state_machine
+from . import config, events, orders, repo_loader, state_machine
 from .agents import analyst, judges
 from .agents import report as report_agent
 from .schemas import JudgeVerdict, score_totals, transcript_to_text
@@ -35,6 +35,7 @@ _background_tasks: set[asyncio.Task] = set()
 async def lifespan(_: FastAPI):
     config.ensure_dirs()
     config.validate()
+    orders.store.load()
     logger.info(
         "PitchMaster 启动，模型：%s / %s，演示模式：%s 问 / %ss / 介绍 %ss，支付拦截：%s",
         config.MODEL_PRO,
@@ -61,6 +62,11 @@ class TextBody(BaseModel):
     text: str = ""
 
 
+class QaBody(BaseModel):
+    mark: str
+    reason: str = ""
+
+
 def _validate_repo_url(repo_url: str) -> str:
     value = repo_url.strip()
     if not re.match(r"^(https?://(www\.)?github\.com/|[\w.-]+/[\w.-]+$)", value):
@@ -78,13 +84,92 @@ def _get_session(session_id: str) -> state_machine.Session:
     return session
 
 
+def _get_session_or_restore(session_id: str) -> state_machine.Session:
+    """服务重启后，订单还在但 session 内存丢失：按订单元数据恢复一个会话。"""
+    session = state_machine.store.get(session_id)
+    if session is not None:
+        return session
+    order = orders.store.get(session_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="会话不存在")
+    session = state_machine.store.create(
+        order.repo_url,
+        order.prd,
+        order.demo_url,
+        session_id=order.order_id,
+    )
+    session.paid_status = order.status
+    session.price = order.price
+    session.owner_comment = order.owner_comment
+    return session
+
+
 def _start_pipeline(session: state_machine.Session) -> None:
     if session.pipeline_started:
         return
     session.pipeline_started = True
+    orders.store.transition(session.id, "running")
     task = asyncio.create_task(_run_pipeline(session))
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
+
+
+def _finalize_order(session: state_machine.Session, success: bool) -> None:
+    order = orders.store.get(session.id)
+    if order is None:
+        return
+    if not success:
+        orders.store.transition(session.id, "failed")
+        return
+    totals = score_totals(session.verdict_initial, session.verdict_final)
+    reasons = orders.store.suggestions(order, session.verdict_final, totals)
+    orders.store.transition(
+        session.id,
+        "done",
+        totals=totals,
+        qa_suggested=bool(reasons),
+        qa_suggest_reasons=reasons,
+    )
+
+
+async def _run_precheck(session: state_machine.Session) -> None:
+    """零 token 预检：先让用户看到"读到了什么"，再收费。"""
+    try:
+        await session.emit(
+            events.LOADING_PROGRESS, msg="正在预检仓库（零 token，不调用模型）…"
+        )
+        loaded = await asyncio.to_thread(repo_loader.load_repository, session.repo_url)
+    except Exception as exc:
+        session.precheck_error = str(exc)
+        orders.store.transition(session.id, "failed")
+        await session.emit(
+            events.ERROR, stage="precheck", msg=str(exc), degraded=False
+        )
+        await session.close()
+        return
+
+    session.repo_text = loaded["text"]
+    session.precheck_done = True
+    session.precheck_stats = {
+        "repo_name": repo_loader.repo_name(session.repo_url),
+        "files_read": loaded["files_read"],
+        "files_skipped": loaded["files_skipped"],
+        "files_total": loaded.get("files_total", 0),
+        "chars": len(loaded["text"]),
+        "suspicious_count": repo_loader.scan_suspicious(loaded["text"]),
+        "price": session.price,
+    }
+    await session.emit(events.PRECHECK_DONE, **session.precheck_stats)
+
+    if config.PAYMENT_REQUIRED:
+        await session.emit(
+            events.PAYMENT_WAITING,
+            qr_url="/static/pay_qr.png",
+            price=session.price,
+        )
+    else:
+        orders.store.transition(session.id, "approved")
+        _start_pipeline(session)
 
 
 def _build_report_data(session: state_machine.Session) -> dict[str, Any]:
@@ -120,13 +205,27 @@ async def _wait_with_event(
 async def _run_pipeline(session: state_machine.Session) -> None:
     try:
         # ---------------------------------------------------------- 仓库 + 材料
-        await session.set_phase("loading")
-        await session.emit(events.LOADING_PROGRESS, msg="正在获取仓库…")
-        loaded = await asyncio.to_thread(repo_loader.load_repository, session.repo_url)
-        await session.emit(
-            events.LOADING_PROGRESS,
-            msg=f"已读取 {loaded['files_read']} 个文件，跳过 {loaded['files_skipped']} 个",
-        )
+        if session.precheck_done:
+            # 预检已完成：复用仓库文本，不再 clone
+            await session.emit(
+                events.LOADING_PROGRESS, msg="复用预检结果，开始解剖…"
+            )
+            loaded = {
+                "text": session.repo_text,
+                "files_read": session.precheck_stats.get("files_read", 0),
+                "files_skipped": session.precheck_stats.get("files_skipped", 0),
+                "files_total": session.precheck_stats.get("files_total", 0),
+            }
+        else:
+            await session.set_phase("loading")
+            await session.emit(events.LOADING_PROGRESS, msg="正在获取仓库…")
+            loaded = await asyncio.to_thread(
+                repo_loader.load_repository, session.repo_url
+            )
+            await session.emit(
+                events.LOADING_PROGRESS,
+                msg=f"已读取 {loaded['files_read']} 个文件，跳过 {loaded['files_skipped']} 个",
+            )
 
         session.prd_text = (session.prd or "").strip()[:20_000]
         session.demo_text = ""
@@ -255,7 +354,19 @@ async def _run_pipeline(session: state_machine.Session) -> None:
                     judge_name=item["name"],
                     index=position,
                 )
-                await session.emit(events.QA_ANSWER, index=position, text=answer_text)
+                answer_reason = (
+                    "skip"
+                    if answer_status == "skip"
+                    else "timeout"
+                    if answer_status == "timeout"
+                    else "user"
+                )
+                await session.emit(
+                    events.QA_ANSWER,
+                    index=position,
+                    text=answer_text,
+                    reason=answer_reason,
+                )
 
                 if answer_status == "skip":
                     for rest_position, rest in enumerate(
@@ -365,10 +476,12 @@ async def _run_pipeline(session: state_machine.Session) -> None:
         )
 
         await session.set_phase("done")
+        _finalize_order(session, True)
 
     except Exception as exc:  # 流水线任何环节失败都要让前端看到
         logger.exception("会话 %s 失败", session.id)
         session.error = {"stage": session.phase, "msg": str(exc), "degraded": False}
+        _finalize_order(session, False)
         await session.emit(events.ERROR, stage=session.phase, msg=str(exc), degraded=False)
     finally:
         await session.close()
@@ -395,6 +508,8 @@ async def health() -> dict[str, Any]:
         "qa_answer_timeout_s": config.QA_ANSWER_TIMEOUT_S,
         "intro_timeout_s": config.INTRO_TIMEOUT_S,
         "payment_required": config.PAYMENT_REQUIRED,
+        "precheck_enabled": config.PRECHECK_ENABLED,
+        "price_yuan": config.PRICE_YUAN,
     }
 
 
@@ -402,22 +517,50 @@ async def health() -> dict[str, Any]:
 async def create_session(body: CreateSessionBody) -> dict[str, Any]:
     repo_url = _validate_repo_url(body.repo_url)
     session = state_machine.store.create(repo_url, body.prd, body.demo_url)
+    session.price = config.PRICE_YUAN
+    orders.store.create(
+        session.id,
+        repo_url,
+        body.prd,
+        body.demo_url,
+        price=config.PRICE_YUAN,
+    )
     await session.emit(
         events.SESSION_CREATED,
         session_id=session.id,
         repo_url=session.repo_url,
     )
 
+    if config.PRECHECK_ENABLED:
+        task = asyncio.create_task(_run_precheck(session))
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
+        return {
+            "session_id": session.id,
+            "payment_required": config.PAYMENT_REQUIRED,
+            "precheck": True,
+        }
+
     if config.PAYMENT_REQUIRED:
         await session.emit(
             events.PAYMENT_WAITING,
             qr_url="/static/pay_qr.png",
+            price=session.price,
         )
-        return {"session_id": session.id, "payment_required": True}
+        return {
+            "session_id": session.id,
+            "payment_required": True,
+            "precheck": False,
+        }
 
     session.paid_status = "approved"
+    orders.store.transition(session.id, "approved")
     _start_pipeline(session)
-    return {"session_id": session.id, "payment_required": False}
+    return {
+        "session_id": session.id,
+        "payment_required": False,
+        "precheck": False,
+    }
 
 
 @app.post("/api/sessions/{session_id}/paid")
@@ -425,9 +568,12 @@ async def mark_paid(session_id: str) -> dict[str, str]:
     session = _get_session(session_id)
     if session.paid_status == "pending":
         return {"status": "pending"}
-    if session.paid_status != "unpaid":
+    if session.paid_status == "approved":
         raise HTTPException(status_code=409, detail="当前订单状态不能标记支付")
+    if session.paid_status != "unpaid":
+        return {"status": session.paid_status}
     session.paid_status = "pending"
+    orders.store.transition(session.id, "pending")
     await session.emit(events.PAYMENT_PENDING)
     return {"status": "pending"}
 
@@ -440,30 +586,51 @@ def _require_admin(token: str) -> None:
 @app.get("/api/admin/orders")
 async def admin_orders(token: str = "") -> dict[str, Any]:
     _require_admin(token)
-    orders = []
-    for session in state_machine.store.all():
-        if session.paid_status in {"unpaid", "pending"}:
-            orders.append(
-                {
-                    "id": session.id,
-                    "repo_url": session.repo_url,
-                    "paid_status": session.paid_status,
-                    "created_at": session.created_at,
-                }
-            )
-    orders.sort(key=lambda item: item["created_at"])
-    return {"orders": orders}
+    rows = [order.model_dump() for order in orders.store.all()]
+    rows.sort(key=lambda item: item["created_at"], reverse=True)
+    return {"orders": rows[:200]}
+
+
+@app.get("/api/admin/stats")
+async def admin_stats(token: str = "") -> dict[str, Any]:
+    _require_admin(token)
+    return orders.store.stats()
+
+
+@app.get("/api/admin/orders/{session_id}")
+async def admin_order_detail(session_id: str, token: str = "") -> dict[str, Any]:
+    _require_admin(token)
+    order = orders.store.get(session_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="订单不存在")
+
+    session = state_machine.store.get(session_id)
+    if session is not None:
+        session_data = session.snapshot().model_dump()
+    else:
+        path = config.SESSIONS_DIR / f"{session_id}.json"
+        try:
+            session_data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            session_data = {}
+    return {"order": order.model_dump(), "session": session_data}
 
 
 @app.post("/api/admin/approve/{session_id}")
 async def admin_approve(session_id: str, token: str = "") -> dict[str, bool]:
     _require_admin(token)
-    session = _get_session(session_id)
-    if session.paid_status == "approved" or session.pipeline_started:
+    session = _get_session_or_restore(session_id)
+    order = orders.store.get(session_id)
+    if order is not None and order.status == "done":
         return {"ok": True}
-    if session.paid_status != "pending":
+    if order is not None and order.status in {"approved", "running"}:
+        if not session.pipeline_started:
+            _start_pipeline(session)
+        return {"ok": True}
+    if session.paid_status not in {"pending", "approved"}:
         raise HTTPException(status_code=409, detail="订单尚未标记支付")
     session.paid_status = "approved"
+    orders.store.transition(session.id, "approved")
     await session.emit(events.PAYMENT_APPROVED)
     _start_pipeline(session)
     return {"ok": True}
@@ -472,10 +639,91 @@ async def admin_approve(session_id: str, token: str = "") -> dict[str, bool]:
 @app.post("/api/admin/comment/{session_id}")
 async def admin_comment(session_id: str, body: TextBody, token: str = "") -> dict[str, bool]:
     _require_admin(token)
-    session = _get_session(session_id)
-    session.owner_comment = body.text.strip()[:500]
-    session._persist()
+    session = state_machine.store.get(session_id)
+    if session is not None:
+        session.owner_comment = body.text.strip()[:500]
+        session._persist()
+    orders.store.transition(
+        session_id, None, owner_comment=body.text.strip()[:500]
+    )
     return {"ok": True}
+
+
+@app.post("/api/admin/qa/{session_id}")
+async def admin_qa(session_id: str, body: QaBody, token: str = "") -> dict[str, bool]:
+    _require_admin(token)
+    order = orders.store.get(session_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    if body.mark not in {"pass", "rework"}:
+        raise HTTPException(status_code=400, detail="mark 只能是 pass 或 rework")
+    reason = body.reason.strip()[:500]
+    if body.mark == "rework" and not reason:
+        raise HTTPException(status_code=400, detail="打回必须填写原因")
+    orders.store.transition(
+        session_id,
+        None,
+        qa_mark=body.mark,
+        rework_reason=reason if body.mark == "rework" else "",
+    )
+    return {"ok": True}
+
+
+@app.post("/api/admin/refund/{session_id}")
+async def admin_refund(session_id: str, token: str = "") -> dict[str, bool]:
+    _require_admin(token)
+    order = orders.store.get(session_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    orders.store.transition(session_id, None, refunded=True)
+    return {"ok": True}
+
+
+@app.post("/api/admin/rework/{session_id}")
+async def admin_rework(session_id: str, token: str = "") -> dict[str, str]:
+    _require_admin(token)
+    original = orders.store.get(session_id)
+    if original is None:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    if original.qa_mark != "rework":
+        raise HTTPException(status_code=409, detail="订单尚未被打回")
+
+    source = state_machine.store.get(session_id)
+    new_session = state_machine.store.create(
+        original.repo_url, original.prd, original.demo_url
+    )
+    new_session.price = 0.0
+    new_session.paid_status = "approved"
+    if source is not None:
+        new_session.repo_text = source.repo_text
+        new_session.precheck_done = source.precheck_done
+        new_session.precheck_stats = dict(source.precheck_stats)
+        new_session.prd_text = source.prd_text
+        new_session.demo_text = source.demo_text
+
+    orders.store.create(
+        new_session.id,
+        original.repo_url,
+        original.prd,
+        original.demo_url,
+        price=0.0,
+    )
+    orders.store.transition(
+        new_session.id,
+        "approved",
+        rework_of=session_id,
+        rework_reason=original.rework_reason,
+        note="重审单",
+    )
+    orders.store.transition(session_id, "reworked", qa_mark="rework")
+
+    await new_session.emit(
+        events.SESSION_CREATED,
+        session_id=new_session.id,
+        repo_url=new_session.repo_url,
+    )
+    _start_pipeline(new_session)
+    return {"session_id": new_session.id}
 
 
 @app.post("/api/sessions/{session_id}/intro")

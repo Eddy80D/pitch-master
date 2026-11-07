@@ -16,9 +16,12 @@ python -m uvicorn app.main:app --reload --port 8000
 
 ### 支付与老板后台
 
-- `PAYMENT_REQUIRED=True`（默认）：用户创建会话后先看到收款码 `static/pay_qr.png`，点「我已支付」进入待放行；老板在 `/admin?token=<ADMIN_TOKEN>` 手动放行后才开始评审。
-- `PAYMENT_REQUIRED=False`：跳过收款，直接开跑（开发/评审演示用）。
-- `ADMIN_TOKEN` 为空时，所有 `/api/admin/*` 返回 404。
+- `PRECHECK_ENABLED=True`（默认）：提交后先零 token 预检仓库，展示"已读取 N 个文件 / M 处疑点"的悬念卡片，再收费。
+- `PAYMENT_REQUIRED=True`（默认）：预检完成后出现收款码 `static/pay_qr.png`，点「我已支付」进入待放行；老板在 `/admin?token=<ADMIN_TOKEN>` 手动放行后才开始评审。
+- `PAYMENT_REQUIRED=False`：跳过收款，预检后直接开跑（开发/评审演示用）。
+- `PRICE_YUAN=19.9`：单场定价；`ADMIN_TOKEN` 为空时所有 `/api/admin/*` 返回 404。
+
+老板后台：营收看板（今日/累计/待放行 + 纯 SVG 柱状/折线图）、订单列表、订单详情（transcript / 初评终评 / 质检通过或打回 / 免费重审 / 老板亲签）。订单流水写 `logs/orders.jsonl`，重启回放。
 
 ### 闭环接口
 
@@ -34,6 +37,11 @@ python -m uvicorn app.main:app --reload --port 8000
 | GET | `/api/admin/orders?token=…` | 待放行订单（错 token 返回 404） |
 | POST | `/api/admin/approve/{id}?token=…` | 老板放行 → 启动流水线 |
 | POST | `/api/admin/comment/{id}?token=…` | 老板亲签评语 |
+| GET | `/api/admin/stats?token=…` | 营收看板聚合数据 |
+| GET | `/api/admin/orders/{id}?token=…` | 订单详情（transcript / 评分） |
+| POST | `/api/admin/qa/{id}?token=…` | 质检通过 / 打回 |
+| POST | `/api/admin/rework/{id}?token=…` | 免费重审（新单 price=0） |
+| POST | `/api/admin/refund/{id}?token=…` | 标记线下退款 |
 
 ## 自测
 
@@ -42,8 +50,10 @@ python scripts/smoke.py                      # T1：pro 非流式 + flash 流式
 python scripts/test_state_machine.py         # T2/T9：等待点、超时、skip、事件序列
 python scripts/test_full_loop.py             # T16：mock 全流程（不调 API）
 python scripts/test_patch.py                 # D2 补丁：支付/admin/PRD 上限/HTML 提取（不调 API）
+python scripts/test_d3.py                    # D3：预检/订单持久化/统计/质检/重审（不调 API）
 python scripts/test_timer.py                 # 限时显示：需用短超时启动服务（见脚本头注释）
 python scripts/test_e2e.py                   # T16：浏览器端到端（需 Chrome + playwright，会调真实 API）
+python scripts/business_report.py            # 经营流水与成本分析（纯标准库，零 LLM）
 ```
 
 ## 目录

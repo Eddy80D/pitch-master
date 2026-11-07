@@ -177,6 +177,9 @@ class SessionState(BaseModel):
     report_ready: bool = False
     paid_status: str = "unpaid"
     owner_comment: str = ""
+    precheck_done: bool = False
+    precheck_stats: dict[str, Any] = Field(default_factory=dict)
+    price: float = 0.0
     totals: dict[str, Any] = Field(default_factory=dict)
     error: dict[str, Any] | None = None
     created_at: float = 0.0

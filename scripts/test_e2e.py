@@ -225,7 +225,7 @@ def main() -> int:
         print("❌ 报告下载失败")
         return 1
 
-    print("✅ D2 补丁浏览器全流程通过")
+    print("✅ D3 营业版浏览器全流程通过（预检 → 支付 → 评审 → 报告）")
     return 0
 
 

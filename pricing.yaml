@@ -1,0 +1,15 @@
+# 单位：元 / 1M tokens。待 MiMo 官方价目确认后替换。
+# 当前为占位 0：business_report.py 会标注"待官方价目确认"，不会编造价格。
+mimo-v2.6-pro:
+  input: 0
+  output: 0
+mimo-v2.6-flash:
+  input: 0
+  output: 0
+
+# 人机对比假设（可在报告中调整）
+human_expert_hourly: 300
+human_review_hours: 2
+
+# 单场定价（元）；与 .env 的 PRICE_YUAN 保持一致
+price_yuan: 19.9

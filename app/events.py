@@ -21,6 +21,7 @@ ERROR = "error"
 PAYMENT_WAITING = "payment.waiting"
 PAYMENT_PENDING = "payment.pending"
 PAYMENT_APPROVED = "payment.approved"
+PRECHECK_DONE = "precheck.done"
 
 # —— D2 闭环 ——
 INTRO_REQUESTED = "intro.requested"
@@ -48,6 +49,7 @@ ALL_TYPES = (
     PAYMENT_WAITING,
     PAYMENT_PENDING,
     PAYMENT_APPROVED,
+    PRECHECK_DONE,
     INTRO_REQUESTED,
     INTRO_DONE,
     QA_START,
