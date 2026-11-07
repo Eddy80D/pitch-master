@@ -223,8 +223,9 @@ def build_question_queue(
     initial: list[JudgeVerdict],
     max_questions: int,
 ) -> list[dict[str, Any]]:
-    """按权重降序轮转（vision 35 → tech/biz 25 → originality 15 → aesthetic 0），
-    每位评委最多问 2 个，总数不超过 max_questions。同权重按 judges.yaml 顺序。
+    """按权重降序轮转（vision 35 → tech/biz 25 → originality 15），
+    每位计分评委强制只问 1 个；美学警察（weight=0）不问。
+    总数不超过 max_questions。同权重按 judges.yaml 顺序。
     """
     judges = load_judges()
     order = {judge["id"]: i for i, judge in enumerate(judges)}
@@ -239,18 +240,19 @@ def build_question_queue(
     for verdict in ranked:
         if len(queue) >= max_questions:
             break
+        if verdict.weight <= 0:
+            continue
         questions = [q.strip() for q in (verdict.questions or []) if q.strip()]
-        for question in questions[:2]:
-            if len(queue) >= max_questions:
-                break
-            judge = meta.get(verdict.judge_id, {})
-            queue.append(
-                {
-                    "judge_id": verdict.judge_id,
-                    "name": verdict.name or judge.get("name", verdict.judge_id),
-                    "text": question,
-                }
-            )
+        if not questions:
+            continue
+        judge = meta.get(verdict.judge_id, {})
+        queue.append(
+            {
+                "judge_id": verdict.judge_id,
+                "name": judge.get("title") or verdict.name or judge.get("name", verdict.judge_id),
+                "text": questions[0],
+            }
+        )
     return queue
 
 

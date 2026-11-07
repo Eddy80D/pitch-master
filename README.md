@@ -26,7 +26,7 @@ python -m uvicorn app.main:app --reload --port 8000
 ### 开场 UI（d3-opening-ui）
 
 - 顶栏 + Hero 大标题 + 毛玻璃表单面板 + 评委天团 6 卡（5 评委 + 选手）。
-- 评委展示名/称号/角色色来自 `judges.yaml` 的 `display_name` / `title` / `color`，评审全流程同步使用新名字（比特·毒舌技术官 / 钱滚滚·商业大亨 / 灵点·远见博士 / 摩斯·侦探 / 洛克·美学警察）。
+- 评委展示名/称号/角色色来自 `judges.yaml` 的 `display_name` / `title` / `color`；舞台与一级页面**代称优先**（毒舌技术官 / 商业大亨 / 远见博士 / 侦探 / 美学警察），个人名作为次级信息。
 - 6 张自包含资料卡在 `static/cards/`，点击卡片弹窗 iframe 打开；Esc / 背板关闭。
 - 评委形象图放 `static/judges/{id}.png`（tech/biz/vision/originality/aesthetic）即自动显示；缺图保持果冻问号。
 - `BG_VIDEO_URL` 为空时用米白渐变兜底；有值时 Hero 自动播放循环静音视频 + 白色半透明遮罩。
@@ -39,6 +39,7 @@ python -m uvicorn app.main:app --reload --port 8000
 - **人工放行恢复**：`AUTO_APPROVE=False` 默认；付款后 `pending`，admin 放行启动流水线。
 - **三幕过场**：放行后全屏渐黑 1.2s → 「路演即将开始 / 选手请准备」逐行淡入 → 渐亮揭幕，约 4.3s 不可跳过。
 - **舞台**：左侧实时看板（移动端底部抽屉）、评委中轴辐射排布、评委/选手气泡（>80 字自动缩小）、回答输入框在选手下方。
+- **答辩问题规则**：每位计分评委强制只问 1 个问题；美学警察不问（总 4 问）。
 - **取消倒计时**：前端零倒计时 UI；服务端兜底 `QA_ANSWER_TIMEOUT_S=600 / INTRO_TIMEOUT_S=300`。
 - **PRD 上传**：支持 pdf / docx / md / txt（≤10MB），`/api/prd/extract` 提取文本；优先级 文件 > 链接/摘要。
 - **正式注册**：独立注册/登录视图；称呼唯一；点「开始评审」未登录会引导注册；登录态存 sessionStorage；老数据仅凭称呼兼容。

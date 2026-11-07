@@ -762,34 +762,34 @@
       <div id="audience" class="audience"></div>
       <div id="stage-judges" class="stage-judges">
         <div class="stage-judge" data-id="tech" data-state="normal" title="点击查看角色卡">
-          <img class="stage-img normal" src="/static/judges/tech-normal.png" alt="比特">
-          <img class="stage-img pass" src="/static/judges/tech-pass.png" alt="比特">
-          <img class="stage-img fail" src="/static/judges/tech-fail.png" alt="比特">
-          <div class="stage-name">比特</div>
+          <img class="stage-img normal" src="/static/judges/tech-normal.png" alt="毒舌技术官">
+          <img class="stage-img pass" src="/static/judges/tech-pass.png" alt="毒舌技术官">
+          <img class="stage-img fail" src="/static/judges/tech-fail.png" alt="毒舌技术官">
+          <div class="stage-name">毒舌技术官</div>
         </div>
         <div class="stage-judge" data-id="biz" data-state="normal" title="点击查看角色卡">
-          <img class="stage-img normal" src="/static/judges/biz-normal.png" alt="钱滚滚">
-          <img class="stage-img pass" src="/static/judges/biz-pass.png" alt="钱滚滚">
-          <img class="stage-img fail" src="/static/judges/biz-fail.png" alt="钱滚滚">
-          <div class="stage-name">钱滚滚</div>
+          <img class="stage-img normal" src="/static/judges/biz-normal.png" alt="商业大亨">
+          <img class="stage-img pass" src="/static/judges/biz-pass.png" alt="商业大亨">
+          <img class="stage-img fail" src="/static/judges/biz-fail.png" alt="商业大亨">
+          <div class="stage-name">商业大亨</div>
         </div>
         <div class="stage-judge" data-id="vision" data-state="normal" title="点击查看角色卡">
-          <img class="stage-img normal" src="/static/judges/vision-normal.png" alt="灵点">
-          <img class="stage-img pass" src="/static/judges/vision-pass.png" alt="灵点">
-          <img class="stage-img fail" src="/static/judges/vision-fail.png" alt="灵点">
-          <div class="stage-name">灵点</div>
+          <img class="stage-img normal" src="/static/judges/vision-normal.png" alt="远见博士">
+          <img class="stage-img pass" src="/static/judges/vision-pass.png" alt="远见博士">
+          <img class="stage-img fail" src="/static/judges/vision-fail.png" alt="远见博士">
+          <div class="stage-name">远见博士</div>
         </div>
         <div class="stage-judge" data-id="originality" data-state="normal" title="点击查看角色卡">
-          <img class="stage-img normal" src="/static/judges/originality-normal.png" alt="摩斯">
-          <img class="stage-img pass" src="/static/judges/originality-pass.png" alt="摩斯">
-          <img class="stage-img fail" src="/static/judges/originality-fail.png" alt="摩斯">
-          <div class="stage-name">摩斯</div>
+          <img class="stage-img normal" src="/static/judges/originality-normal.png" alt="侦探">
+          <img class="stage-img pass" src="/static/judges/originality-pass.png" alt="侦探">
+          <img class="stage-img fail" src="/static/judges/originality-fail.png" alt="侦探">
+          <div class="stage-name">侦探</div>
         </div>
         <div class="stage-judge" data-id="aesthetic" data-state="normal" title="点击查看角色卡">
-          <img class="stage-img normal" src="/static/judges/aesthetic-normal.png" alt="洛克">
-          <img class="stage-img pass" src="/static/judges/aesthetic-pass.png" alt="洛克">
-          <img class="stage-img fail" src="/static/judges/aesthetic-fail.png" alt="洛克">
-          <div class="stage-name">洛克</div>
+          <img class="stage-img normal" src="/static/judges/aesthetic-normal.png" alt="美学警察">
+          <img class="stage-img pass" src="/static/judges/aesthetic-pass.png" alt="美学警察">
+          <img class="stage-img fail" src="/static/judges/aesthetic-fail.png" alt="美学警察">
+          <div class="stage-name">美学警察</div>
         </div>
       </div>
       <div class="stage-floor">
@@ -1059,13 +1059,14 @@
 
   // ---------------- 评委卡片：judging 阶段只有"审阅中/已就位"，不显示分数
   function ensureCard(judgeId, name) {
+    const displayName = judgeTitle(judgeId, name);
     let card = cards.get(judgeId);
     if (!card) {
       card = el("article", "judge");
       card.dataset.id = judgeId;
       const head = el("div", "judge-head");
       head.append(
-        el("span", "judge-name", name || judgeId),
+        el("span", "judge-name", displayName),
         el("span", "judge-verdict", "")
       );
       card.append(
@@ -1076,9 +1077,7 @@
       cards.set(judgeId, card);
       judgesEl.appendChild(card);
     }
-    if (name) {
-      card.querySelector(".judge-name").textContent = name;
-    }
+    card.querySelector(".judge-name").textContent = displayName;
     return card;
   }
 
@@ -1237,7 +1236,7 @@
     box.replaceChildren(...JUDGE_FALLBACK.slice(0, 5).map((item) => {
       const row = el("div", "board-judge");
       row.dataset.id = item.id;
-      row.append(el("span", "board-dot"), el("span", "", item.name), el("span", "board-state", "等待"));
+      row.append(el("span", "board-dot"), el("span", "", item.title || item.name), el("span", "board-state", "等待"));
       return row;
     }));
   }
@@ -1456,14 +1455,14 @@
         setStageJudge(payload.judge_id, "normal");
         updateBoardJudge(payload.judge_id, "thinking");
         setJudgeThinking(payload.judge_id);
-        log(`评委 ${payload.judge_id} 正在阅读证据包…`);
+        log(`评委 ${judgeTitle(payload.judge_id)} 正在阅读证据包…`);
         break;
       case "judge.ready":
         markReady(payload.judge_id, payload.name);
         setStageJudge(payload.judge_id, "normal");
         updateBoardJudge(payload.judge_id, "ready");
         hideJudgeBubble(payload.judge_id);
-        log(`评委「${payload.name}」已就位`, "green");
+        log(`评委「${judgeTitle(payload.judge_id, payload.name)}」已就位`, "green");
         break;
       case "intro.requested":
         log("请做自我介绍", "gold");
@@ -1531,10 +1530,10 @@
       case "encore":
         setStageJudge(payload.judge_id, "normal");
         updateBoardJudge(payload.judge_id, "ready");
-        log(`🎤 安可：${payload.name} 返场`, "gold");
+        log(`🎤 安可：${judgeTitle(payload.judge_id, payload.name)} 返场`, "gold");
         break;
       case "bicker.line":
-        log(`🔥 ${payload.name}：${payload.text}`, "hot");
+        log(`🔥 ${judgeTitle(payload.judge_id, payload.name)}：${payload.text}`, "hot");
         break;
       case "reveal.chair":
         hideJudgeBubbles();
@@ -1542,7 +1541,7 @@
         if (payload.turned === null) {
           setStageJudge(payload.judge_id, "normal");
           updateBoardJudge(payload.judge_id, "");
-          log(`🪑 ${payload.name}：缺席（缺评）`, "red");
+          log(`🪑 ${judgeTitle(payload.judge_id, payload.name)}：缺席（缺评）`, "red");
         } else {
           setStageJudge(payload.judge_id, payload.turned ? "pass" : "fail");
           updateBoardJudge(payload.judge_id, payload.turned ? "pass" : "fail");
@@ -1550,7 +1549,7 @@
             revealScore += Number(payload.final_score);
             revealWeight += Number(payload.weight);
           }
-          log(`🪑 ${payload.name}：${payload.turned ? "✅ 转身" : "❌ 留座"} ${payload.final_score ?? 0}/${payload.weight}`, payload.turned ? "green" : "red");
+          log(`🪑 ${judgeTitle(payload.judge_id, payload.name)}：${payload.turned ? "✅ 转身" : "❌ 留座"} ${payload.final_score ?? 0}/${payload.weight}`, payload.turned ? "green" : "red");
         }
         break;
       case "report.ready":
@@ -1818,6 +1817,18 @@
     originality: "#3D9B6A",
     aesthetic: "#E75A9C",
   };
+
+  const JUDGE_TITLES = {
+    tech: "毒舌技术官",
+    biz: "商业大亨",
+    vision: "远见博士",
+    originality: "侦探",
+    aesthetic: "美学警察",
+  };
+
+  function judgeTitle(judgeId, fallback) {
+    return JUDGE_TITLES[judgeId] || fallback || judgeId;
+  }
 
   function escapeHtml(text) {
     return String(text)
@@ -2324,8 +2335,10 @@
     const card = el("article", "judge-lineup-card");
     card.style.setProperty("--role-color", item.color);
     card.style.setProperty("--role-dark", shadeColor(item.color));
+    const topLabel = item.id === "player" ? "选手" : (item.title || item.name);
+    const bottomLabel = item.id === "player" ? "这个位置，是你的" : (item.name || "");
     card.append(
-      el("div", "card-top", item.name),
+      el("div", "card-top", topLabel),
       el("div", "card-role", item.id === "player" ? "选手" : "评委")
     );
 
@@ -2348,7 +2361,7 @@
     hoverImage.src = `/static/judges/${item.id}-${item.id === "player" ? "cheer" : "pass"}.png`;
     body.append(hoverImage);
 
-    card.append(body, el("div", "card-bottom", item.title || item.dimension || ""));
+    card.append(body, el("div", "card-bottom", bottomLabel));
     card.addEventListener("click", () => openCard(item.id));
     return card;
   }

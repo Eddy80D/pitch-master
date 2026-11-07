@@ -211,6 +211,11 @@ async def run(mode: str = "normal") -> int:
     else:
         assert types.count(events.QA_QUESTION) == config.QA_MAX_QUESTIONS
         assert types.count(events.QA_REACTION) == config.QA_MAX_QUESTIONS
+        question_judges = [
+            ev["payload"]["judge_id"] for ev in seen if ev["type"] == events.QA_QUESTION
+        ]
+        assert len(set(question_judges)) == len(question_judges), question_judges
+        assert "aesthetic" not in question_judges, question_judges
         for ev in seen:
             if ev["type"] == events.QA_ANSWER:
                 assert ev["payload"]["reason"] == "user", ev

@@ -70,10 +70,10 @@ def browser_checks(base_url: str) -> None:
         page.goto(base_url, wait_until="domcontentloaded")
         page.wait_for_selector("#judge-lineup .judge-lineup-card", timeout=15000)
 
-        names = page.locator("#judge-lineup .card-top").all_inner_texts()
-        assert names == ["比特", "钱滚滚", "灵点", "摩斯", "洛克", "选手"], names
-        titles = page.locator("#judge-lineup .card-bottom").all_inner_texts()
-        assert titles == ["毒舌技术官", "商业大亨", "远见博士", "侦探", "美学警察", "这个位置，是你的"], titles
+        titles = page.locator("#judge-lineup .card-top").all_inner_texts()
+        assert titles == ["毒舌技术官", "商业大亨", "远见博士", "侦探", "美学警察", "选手"], titles
+        names = page.locator("#judge-lineup .card-bottom").all_inner_texts()
+        assert names == ["比特", "钱滚滚", "灵点", "摩斯", "洛克", "这个位置，是你的"], names
         assert page.evaluate(
             "getComputedStyle(document.querySelector('.hero-title')).fontSize"
         ) == "72px"
