@@ -23,6 +23,15 @@ python -m uvicorn app.main:app --reload --port 8000
 
 老板后台：营收看板（今日/累计/待放行/待核验/逃单/测试单 + 纯 SVG 柱状/折线图）、订单列表、订单详情（transcript / 初评终评 / 质检通过或打回 / 免费重审 / 老板亲签）。订单流水写 `logs/orders.jsonl`，重启回放。
 
+### 开场 UI（d3-opening-ui）
+
+- 顶栏 + Hero 大标题 + 毛玻璃表单面板 + 评委天团 6 卡（5 评委 + 选手）。
+- 评委展示名/角色色来自 `judges.yaml` 的 `display_name` / `color`，评审全流程同步使用新名字（比特 / 商业大亨 / 远见博士 / 摩斯 / 洛克）。
+- 6 张自包含资料卡在 `static/cards/`，点击卡片弹窗 iframe 打开；Esc / 背板关闭。
+- 评委形象图放 `static/judges/{id}.png`（tech/biz/vision/originality/aesthetic）即自动显示；缺图保持果冻问号。
+- `BG_VIDEO_URL` 为空时用米白渐变兜底；有值时 Hero 自动播放循环静音视频 + 白色半透明遮罩。
+- 零外部依赖：资料卡与页面均无 Google Fonts/CDN。
+
 ### 轻量注册（D3-growth）
 
 - 提交表单新增「称呼/队名（必填）」与「联系方式（选填）」，无密码、无验证。
@@ -75,6 +84,7 @@ python scripts/test_patch.py                 # D2 补丁：支付/admin/PRD 上�
 python scripts/test_d3.py                    # D3：预检/订单持久化/统计/质检/重审（不调 API）
 python scripts/test_polish.py                # D3.5：测试单/自动放行/核验/IP 护栏（不调 API）
 python scripts/test_growth.py                # D3-growth：注册/隐私/成本口径（不调 API）
+python scripts/test_opening_ui.py            # 开场 UI：6 卡/资料卡/零外链/375px（需服务 + Chrome）
 python scripts/test_timer.py                 # 限时显示：需用短超时启动服务（见脚本头注释）
 python scripts/test_e2e.py                   # T16：浏览器端到端（需 Chrome + playwright，会调真实 API）
 python scripts/business_report.py            # 经营流水与成本分析（纯标准库，零 LLM）

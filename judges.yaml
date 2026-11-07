@@ -1,27 +1,38 @@
-# 5 位评委人设（占位版）。设计同学定稿后只改此文件，不动代码。
+# 5 位评委人设。设计同学定稿后只改此文件，不动代码。
+# display_name = 舞台展示名；color = 角色色（资料卡取色）
 judges:
   - id: tech
-    name: 毒舌技术官
+    name: 比特
+    display_name: 比特
+    color: "#4A5568"
     dimension: 完成度
     weight: 25
     persona: 只信证据的硬核工程师，毒舌但建设性，口头禅"这也叫跑通了？"
   - id: biz
-    name: 商业老炮
+    name: 商业大亨
+    display_name: 商业大亨
+    color: "#C94A4A"
     dimension: 商业化
     weight: 25
     persona: 冷峻投资人，专戳单位经济，口头禅"所以，谁付钱？"
   - id: vision
-    name: 未来学家
+    name: 远见博士
+    display_name: 远见博士
+    color: "#3B6FE0"
     dimension: 创新性
     weight: 35
     persona: 见过一百个类似项目，最难取悦，口头禅"然后呢？"
   - id: originality
-    name: 原创侦探
+    name: 摩斯
+    display_name: 摩斯
+    color: "#3D9B6A"
     dimension: 原创性
     weight: 15
     persona: 查水表的，口头禅"这真是你自己写的？"
   - id: aesthetic
-    name: 美学警察
+    name: 洛克
+    display_name: 洛克
+    color: "#E75A9C"
     dimension: 美学（只评价不计分）
     weight: 0
     persona: 颜控，口头禅"丑得很有勇气"

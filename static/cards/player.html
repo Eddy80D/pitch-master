@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>选手 · 小黑 — 路演大师选手形象卡</title>
+<style>
+  :root{
+    --bg:#12141a;
+    --panel:#1c2028;
+    --line:#2c323d;
+    --ink:#eaeef4;
+    --ink-dim:#a8b3c2;
+    --ink-faint:#6c7887;
+    --gold:#f5c542;
+    --green:#5fce8f;
+    --red:#e05252;
+    --blue:#6ab8f0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+    line-height:1.75;overflow-x:hidden;
+  }
+  .topbar{
+    position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
+    padding:14px 28px;background:rgba(18,20,26,.82);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar .brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.06em}
+  .brand .logo{width:34px;height:34px;border-radius:10px;flex:none;background:linear-gradient(135deg,#2e3440,#1a1e26);border:1px solid #3d4654;display:flex;align-items:center;justify-content:center}
+  .brand small{display:block;font-size:11px;font-weight:400;color:var(--ink-faint);letter-spacing:.22em}
+  .chip{font-size:12px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);color:var(--ink-dim);background:rgba(255,255,255,.03)}
+  .chip.hot{border-color:rgba(245,197,66,.5);color:#f2dd8c;background:rgba(245,197,66,.1)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  section{margin:56px 0}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:24px}
+  .sec-head .no{font-family:ui-monospace,Consolas,monospace;color:var(--gold);font-size:13px;letter-spacing:.2em}
+  .sec-head h2{font-size:22px;letter-spacing:.04em}
+  .sec-head .sub{color:var(--ink-faint);font-size:13px}
+  .sec-head::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+
+  .hero{display:grid;grid-template-columns:1.05fr 1fr;gap:32px;margin-top:40px}
+  .stage{
+    position:relative;border-radius:24px;overflow:hidden;
+    background:radial-gradient(140% 100% at 50% 0%, rgba(245,197,66,.14), transparent 55%),linear-gradient(180deg,#20242e,#141821);
+    border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+    padding:28px 22px 20px;display:flex;flex-direction:column;align-items:center;
+  }
+  .stage .status{position:relative;z-index:2;align-self:flex-start;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-dim);font-family:ui-monospace,Consolas,monospace;letter-spacing:.12em}
+  .status .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+  .char-holder{position:relative;z-index:2;width:min(330px,78%);margin:4px auto 0;animation:float 5.4s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  .char-holder svg{width:100%;height:auto;display:block;overflow:visible}
+  .state-tabs{position:relative;z-index:2;display:flex;gap:9px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+  .state-tab{cursor:pointer;user-select:none;padding:8px 15px;border-radius:11px;font-size:12.5px;border:1px solid var(--line);color:var(--ink-dim);background:rgba(255,255,255,.03);transition:all .25s}
+  .state-tab:hover{transform:translateY(-2px);color:var(--ink)}
+  .state-tab.on{background:linear-gradient(135deg,rgba(245,197,66,.22),rgba(245,197,66,.07));border-color:rgba(245,197,66,.55);color:#ffeba8;box-shadow:0 8px 22px rgba(245,197,66,.15)}
+  .state-caption{position:relative;z-index:2;margin-top:14px;min-height:44px;text-align:center;color:var(--ink-dim);font-size:13px;max-width:360px}
+  .state-caption b{color:var(--ink)}
+
+  .idcard{border-radius:24px;padding:30px;background:linear-gradient(165deg,var(--panel),#171b23);border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.45)}
+  .idcard .kicker{font-size:12px;letter-spacing:.32em;color:var(--gold);font-weight:600}
+  .idcard h1{font-size:46px;letter-spacing:.1em;margin:8px 0 2px;font-family:"Noto Serif SC","Songti SC",serif}
+  .idcard h1 .en{font-size:14px;letter-spacing:.3em;color:var(--ink-faint);font-family:ui-monospace,Consolas,monospace;font-weight:400;vertical-align:middle;margin-left:10px}
+  .idcard .role{color:var(--green);font-size:14px;letter-spacing:.12em;margin:4px 0 14px}
+  .idcard .pitch{font-size:14.5px;color:var(--ink-dim);border-left:3px solid var(--gold);padding-left:13px;margin:6px 0 18px}
+  .tag-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .tag{padding:4px 13px;border-radius:999px;font-size:12.5px;background:rgba(245,197,66,.09);border:1px solid rgba(245,197,66,.28);color:#eedd9f}
+  .file-table{border-top:1px dashed var(--line);padding-top:15px;display:grid;gap:9px;font-size:13px}
+  .file-table .row{display:grid;grid-template-columns:82px 1fr;gap:10px}
+  .file-table .k{color:var(--ink-faint);letter-spacing:.12em}
+  .file-table .v{color:var(--ink-dim)}
+  .file-table .v b{color:var(--ink)}
+
+  .states{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .scard{border-radius:18px;overflow:hidden;background:linear-gradient(180deg,var(--panel),#171b23);border:1px solid var(--line)}
+  .scard .view{height:190px;display:flex;align-items:center;justify-content:center;background:radial-gradient(90% 90% at 50% 25%, rgba(245,197,66,.09), transparent 65%),#12161d;border-bottom:1px solid var(--line)}
+  .scard .view svg{width:70%;height:auto;overflow:visible}
+  .scard .meta{padding:14px 16px 16px}
+  .scard h3{font-size:14px;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between}
+  .scard .en{font-size:9.5px;letter-spacing:.22em;color:var(--ink-faint);font-family:ui-monospace,Consolas,monospace;margin:2px 0 8px}
+  .scard p{font-size:11.8px;color:var(--ink-dim)}
+  .pill{font-size:10px;padding:2px 9px;border-radius:999px;letter-spacing:.08em}
+  .pill.gray{background:#282e38;color:#9aa7b8}
+  .pill.blue{background:rgba(106,184,240,.14);color:#9fd0f5;border:1px solid rgba(106,184,240,.3)}
+  .pill.green{background:rgba(95,206,143,.14);color:#8fe4b0;border:1px solid rgba(95,206,143,.32)}
+  .pill.red{background:rgba(224,82,82,.13);color:#f0a0a0;border:1px solid rgba(224,82,82,.3)}
+
+  .flow{display:grid;gap:12px}
+  .frow{display:flex;align-items:center;gap:14px;border-radius:14px;padding:15px 18px;background:#171c24;border:1px solid var(--line);font-size:13px;color:var(--ink-dim)}
+  .frow .t{flex:none;min-width:120px;color:var(--ink);font-weight:600}
+  .frow .arr{color:var(--gold);font-family:Consolas,monospace}
+  .note{margin-top:18px;padding:16px 20px;border-radius:14px;background:rgba(245,197,66,.07);border:1px solid rgba(245,197,66,.25);color:#e8d9a8;font-size:12.8px}
+
+  footer{margin-top:70px;padding:28px 24px 42px;text-align:center;color:var(--ink-faint);font-size:12px;letter-spacing:.12em;border-top:1px solid var(--line)}
+  @media(max-width:900px){.hero{grid-template-columns:1fr}.states{grid-template-columns:1fr 1fr}.idcard h1{font-size:36px}}
+  @media(max-width:560px){.states{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="stagebg" aria-hidden="true">
+  <div class="beam b1"></div><div class="beam b2"></div>
+  <div class="curtain"></div><div class="floor"></div><div class="dust"></div>
+</div>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="13" r="7.5" stroke="#f5c542" stroke-width="1.8"/><path d="M8 8l2-3 2 2 2-2 2 3" stroke="#f5c542" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div>路演大师 · 选手形象<small>ROADSHOW MASTER · CONTESTANT</small></div>
+  </div>
+  <div><span class="chip hot">选手形象卡 v1.0</span></div>
+</div>
+
+<div class="wrap">
+
+  <section class="hero" id="hero">
+    <div class="stage">
+      <div class="status"><span class="dot"></span><span id="statusText">SYS://CONTESTANT · WAITING</span></div>
+      <div class="char-holder" id="charHolder"></div>
+      <div class="state-tabs">
+        <div class="state-tab on" data-state="idle">🪑 就位等待</div>
+        <div class="state-tab" data-state="answer">💬 答辩打字</div>
+        <div class="state-tab" data-state="cheer">🎉 欢呼（≥3 灯）</div>
+        <div class="state-tab" data-state="sad">🌑 失落（&lt;3 灯）</div>
+      </div>
+      <div class="state-caption" id="stateCaption">
+        <b>就位等待 · WAITING</b><br>选手落座，背影写着「紧张但稳」。全场安静，等他开口。
+      </div>
+    </div>
+
+    <div class="idcard">
+      <div class="kicker">CONTESTANT · 舞台中央的每一个你</div>
+      <h1>小 黑<span class="en">XIAO HEI</span></h1>
+      <div class="role">选手 · THE CONTESTANT</div>
+      <p class="pitch">「我就是来路演的。<br>灯，就交给你们了。」</p>
+      <div class="tag-row">
+        <span class="tag">刺猬黑发</span>
+        <span class="tag">无脸背影</span>
+        <span class="tag">企鹅坐姿</span>
+        <span class="tag">气泡答辩</span>
+        <span class="tag">烟花彩带</span>
+      </div>
+      <div class="file-table">
+        <div class="row"><span class="k">亮灯规则</span><span class="v"><b>≥ 3 灯</b> → 欢呼（烟花 + 彩带 + 举拳）；<b>&lt; 3 灯</b> → 失落（全场暗灯 + 冷汗）</span></div>
+        <div class="row"><span class="k">流程</span><span class="v">就位等待 → 答辩打字（气泡）→ 亮灯裁决 → 欢呼 / 失落</span></div>
+        <div class="row"><span class="k">形象说明</span><span class="v">刺猬黑发遮脸、无五官——<b>他是每一个上场的选手</b>，观众在他身上看见自己。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="states">
+    <div class="sec-head">
+      <span class="no">01</span>
+      <h2>四形态 · 状态语义</h2>
+      <span class="sub">与评委三态同款 3D 化风格 · 情绪全靠姿势与特效</span>
+    </div>
+    <div class="states">
+      <div class="scard">
+        <div class="view" id="viewIdle"></div>
+        <div class="meta">
+          <h3>就位等待<span class="pill gray">IDLE</span></h3>
+          <div class="en">STATE-00</div>
+          <p>加载页 / 评委入场中。端坐，无特效，全场灯光聚焦舞台。</p>
+        </div>
+      </div>
+      <div class="scard">
+        <div class="view" id="viewAnswer"></div>
+        <div class="meta">
+          <h3>答辩打字<span class="pill blue">ANSWERING</span></h3>
+          <div class="en">STATE-01</div>
+          <p>选手答题中。头顶浮现<b>语音气泡</b>（打字指示点），替他说出回答。</p>
+        </div>
+      </div>
+      <div class="scard">
+        <div class="view" id="viewCheer"></div>
+        <div class="meta">
+          <h3>欢呼<span class="pill green">CHEER · ≥3 灯</span></h3>
+          <div class="en">STATE-02</div>
+          <p>三灯及以上！双臂举拳，头顶闪电特效，<b>烟花 + 彩带</b>两侧齐放，会场沸腾。</p>
+        </div>
+      </div>
+      <div class="scard">
+        <div class="view" id="viewSad"></div>
+        <div class="meta">
+          <h3>失落<span class="pill red">SAD · &lt;3 灯</span></h3>
+          <div class="en">STATE-03</div>
+          <p>不足三灯。垂头、手臂垂落、冷汗滑落，<b>整个场地暗下来</b>，只剩一束追光。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="flow">
+    <div class="sec-head">
+      <span class="no">02</span>
+      <h2>状态流 · 交互映射</h2>
+      <span class="sub">给架构的状态机对接表</span>
+    </div>
+    <div class="flow">
+      <div class="frow"><span class="t">进入会场</span><span class="arr">→</span><span>就位等待（IDLE）：无特效，等待评委入席</span></div>
+      <div class="frow"><span class="t">开始答辩</span><span class="arr">→</span><span>答辩打字（ANSWERING）：语音气泡 + 打字指示点，气泡内容 = LLM 生成的选手回答</span></div>
+      <div class="frow"><span class="t">亮灯 ≥ 3</span><span class="arr">→</span><span>欢呼（CHEER）：举拳 + 头顶闪电 + 烟花 + 彩带（暖色粒子系统）</span></div>
+      <div class="frow"><span class="t">亮灯 &lt; 3</span><span class="arr">→</span><span>失落（SAD）：垂头 + 冷汗 + <b>全场背景调暗（亮度 → 25%）</b> + 单束追光保留</span></div>
+    </div>
+    <div class="note">
+      💡 设计要点：选手<b>无五官</b>——情绪全部由「姿势 + 特效 + 场地灯光」表达。这样任何团队成员都能在他身上代入自己，也让「灯光裁决」成为唯一的表情。三态色语义与评委卡一致：欢呼=暖色、失落=冷色压暗。
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  路演大师 · 选手形象卡 &nbsp;|&nbsp; 小黑 XIAO HEI<br>
+  「灯，就交给你们了。」· 黑客松作品 · v1.0
+</footer>
+
+<script>
+/* ================= 选手 SVG（四形态共用） ================= */
+function contestantSVG(id, state){
+  return `
+<svg viewBox="0 0 400 460" xmlns="http://www.w3.org/2000/svg" aria-label="选手形象">
+  <defs>
+    <radialGradient id="cBody${id}" cx="0.35" cy="0.25" r="0.95">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.6" stop-color="#e8eaf0"/>
+      <stop offset="1" stop-color="#b9bfca"/>
+    </radialGradient>
+    <radialGradient id="cHair${id}" cx="0.35" cy="0.25" r="0.95">
+      <stop offset="0" stop-color="#3a3f4a"/>
+      <stop offset="0.55" stop-color="#23262c"/>
+      <stop offset="1" stop-color="#121417"/>
+    </radialGradient>
+    <linearGradient id="cGold${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe98a"/>
+      <stop offset="1" stop-color="#f0b90c"/>
+    </linearGradient>
+    <filter id="cSoft${id}" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="cShadow${id}" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity="0.45"/></filter>
+    <filter id="cProp${id}" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity="0.45"/></filter>
+    <style>
+      .cs{opacity:0;transition:opacity .5s ease;transform-box:fill-box;transform-origin:center;pointer-events:none}
+      .cs.active{opacity:1}
+    </style>
+  </defs>
+
+  <ellipse cx="200" cy="432" rx="112" ry="16" fill="#000" opacity="0.5" filter="url(#cSoft${id})"/>
+
+  <!-- 身体（企鹅坐姿团状体，无五官） -->
+  <g filter="url(#cShadow${id})">
+    <path d="M200 150 Q150 150 136 200 Q122 252 126 302 Q132 372 200 400 Q268 372 274 302 Q278 252 264 200 Q250 150 200 150 Z" fill="url(#cBody${id})" stroke="#23262c" stroke-width="4"/>
+    <!-- 圆领 + 背带线 -->
+    <path d="M172 196 Q200 212 228 196" stroke="#23262c" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M148 218 Q138 280 152 340" stroke="#23262c" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.75"/>
+    <path d="M252 218 Q262 280 248 340" stroke="#23262c" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.75"/>
+  </g>
+
+  <!-- ================= 就位等待 ================= -->
+  <g class="cs ${state==='idle'?'active':''}" data-st="idle">
+    <!-- 刺猬黑发（无五官） -->
+    <path d="M134 196 Q126 146 158 122 L150 96 L172 112 L182 84 L200 106 L218 82 L230 110 L250 92 L242 120 Q274 146 266 196 Q238 172 200 172 Q162 172 134 196 Z" fill="url(#cHair${id})" stroke="#0c0d10" stroke-width="3.5" stroke-linejoin="round"/>
+    <!-- 手臂贴身 -->
+    <path d="M136 268 Q130 300 138 330" stroke="#23262c" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <path d="M264 268 Q270 300 262 330" stroke="#23262c" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8"/>
+  </g>
+
+  <!-- ================= 答辩打字（气泡） ================= -->
+  <g class="cs ${state==='answer'?'active':''}" data-st="answer">
+    <path d="M134 196 Q126 146 158 122 L150 96 L172 112 L182 84 L200 106 L218 82 L230 110 L250 92 L242 120 Q274 146 266 196 Q238 172 200 172 Q162 172 134 196 Z" fill="url(#cHair${id})" stroke="#0c0d10" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M136 268 Q130 300 138 330" stroke="#23262c" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <path d="M264 268 Q270 300 262 330" stroke="#23262c" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <!-- 语音气泡 ×2 -->
+    <g filter="url(#cProp${id})">
+      <rect x="248" y="72" width="118" height="52" rx="18" fill="#ffffff" stroke="#23262c" stroke-width="3.5"/>
+      <path d="M268 122 L258 142 L288 124 Z" fill="#ffffff" stroke="#23262c" stroke-width="3.5" stroke-linejoin="round"/>
+      <circle cx="282" cy="98" r="6" fill="#6ab8f0"/><circle cx="306" cy="98" r="6" fill="#6ab8f0"/><circle cx="330" cy="98" r="6" fill="#6ab8f0"/>
+      <rect x="60" y="128" width="92" height="42" rx="15" fill="#ffffff" stroke="#23262c" stroke-width="3.5"/>
+      <path d="M118 168 L128 186 L100 170 Z" fill="#ffffff" stroke="#23262c" stroke-width="3.5" stroke-linejoin="round"/>
+      <rect x="76" y="144" width="60" height="5" rx="2.5" fill="#c3ccd8"/>
+      <rect x="76" y="155" width="42" height="5" rx="2.5" fill="#c3ccd8"/>
+    </g>
+  </g>
+
+  <!-- ================= 欢呼（≥3 灯） ================= -->
+  <g class="cs ${state==='cheer'?'active':''}" data-st="cheer">
+    <path d="M134 196 Q126 146 158 122 L150 96 L172 112 L182 84 L200 106 L218 82 L230 110 L250 92 L242 120 Q274 146 266 196 Q238 172 200 172 Q162 172 134 196 Z" fill="url(#cHair${id})" stroke="#0c0d10" stroke-width="3.5" stroke-linejoin="round"/>
+    <!-- 双臂高举 + 拳头 -->
+    <path d="M144 240 Q112 196 108 150" stroke="#23262c" stroke-width="16" fill="none" stroke-linecap="round"/>
+    <path d="M256 240 Q288 196 292 150" stroke="#23262c" stroke-width="16" fill="none" stroke-linecap="round"/>
+    <ellipse cx="106" cy="138" rx="15" ry="17" fill="url(#cBody${id})" stroke="#23262c" stroke-width="4"/>
+    <ellipse cx="294" cy="138" rx="15" ry="17" fill="url(#cBody${id})" stroke="#23262c" stroke-width="4"/>
+    <!-- 头顶闪电 ×3 -->
+    <g fill="url(#cGold${id})" stroke="#23262c" stroke-width="3" stroke-linejoin="round">
+      <path d="M172 66 L182 34 L192 52 L186 78 L170 88 L172 66 Z"/>
+      <path d="M198 58 L208 22 L220 44 L212 74 L196 84 L198 58 Z"/>
+      <path d="M226 68 L238 40 L248 58 L242 82 L226 90 L226 68 Z"/>
+    </g>
+    <!-- 烟花 ×2 -->
+    <g stroke="#f5c542" stroke-width="5" stroke-linecap="round">
+      <path d="M56 118 L56 96 M56 164 L56 186 M34 141 L12 141 M78 141 L100 141 M42 127 L26 111 M70 155 L86 171 M70 127 L86 111 M42 155 L26 171"/>
+    </g>
+    <circle cx="56" cy="141" r="9" fill="#ffe98a" stroke="#23262c" stroke-width="3"/>
+    <g stroke="#e05252" stroke-width="5" stroke-linecap="round">
+      <path d="M344 108 L344 88 M344 152 L344 172 M324 130 L304 130 M364 130 L384 130 M330 117 L316 103 M358 143 L372 157 M358 117 L372 103 M330 143 L316 157"/>
+    </g>
+    <circle cx="344" cy="130" r="9" fill="#f28a8a" stroke="#23262c" stroke-width="3"/>
+    <!-- 彩带 -->
+    <g stroke-width="5" stroke-linecap="round" fill="none">
+      <path d="M84 208 Q92 196 82 186" stroke="#6ab8f0"/>
+      <path d="M118 240 Q128 228 116 218" stroke="#f28ab0"/>
+      <path d="M310 206 Q302 194 312 184" stroke="#5fce8f"/>
+      <path d="M278 242 Q268 230 280 220" stroke="#f5c542"/>
+      <path d="M150 130 Q158 120 150 110" stroke="#f28ab0"/>
+      <path d="M248 128 Q240 118 250 108" stroke="#6ab8f0"/>
+      <path d="M92 268 Q102 258 90 248" stroke="#f5c542"/>
+      <path d="M306 266 Q296 256 308 246" stroke="#e05252"/>
+    </g>
+  </g>
+
+  <!-- ================= 失落（<3 灯，全场暗灯） ================= -->
+  <g class="cs ${state==='sad'?'active':''}" data-st="sad">
+    <!-- 暗场光罩 -->
+    <rect x="0" y="0" width="400" height="460" fill="#04060c" opacity="0.55"/>
+    <ellipse cx="200" cy="300" rx="150" ry="180" fill="#0a0e18" opacity="0.25" filter="url(#cSoft${id})"/>
+    <!-- 垂头的刺猬黑发（微侧） -->
+    <path d="M134 202 Q126 152 158 128 L150 102 L172 118 L182 90 L200 112 L218 88 L230 116 L250 98 L242 126 Q274 152 266 202 Q238 178 200 178 Q162 178 134 202 Z" fill="url(#cHair${id})" stroke="#0c0d10" stroke-width="3.5" stroke-linejoin="round" transform="rotate(5 200 165)"/>
+    <!-- 手臂垂落 -->
+    <path d="M138 262 Q126 306 132 344" stroke="#23262c" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <path d="M262 262 Q272 306 264 344" stroke="#23262c" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <!-- 冷汗 + 蓝竖条 -->
+    <path d="M154 132 Q162 148 154 158 Q146 148 154 132 Z" fill="#57c7c0" stroke="#23262c" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="122" y="146" width="9" height="26" rx="4.5" fill="#6ab8f0" stroke="#23262c" stroke-width="2.5"/>
+    <rect x="270" y="142" width="9" height="26" rx="4.5" fill="#6ab8f0" stroke="#23262c" stroke-width="2.5"/>
+  </g>
+</svg>`;
+}
+
+/* 渲染 */
+document.getElementById('charHolder').innerHTML = contestantSVG('hero','idle');
+document.getElementById('viewIdle').innerHTML = contestantSVG('i','idle');
+document.getElementById('viewAnswer').innerHTML = contestantSVG('a','answer');
+document.getElementById('viewCheer').innerHTML = contestantSVG('c','cheer');
+document.getElementById('viewSad').innerHTML = contestantSVG('s','sad');
+
+const captions = {
+  idle:   '<b>就位等待 · WAITING</b><br>选手落座，背影写着「紧张但稳」。全场安静，等他开口。',
+  answer: '<b>答辩打字 · ANSWERING</b><br>气泡里是他的回答——打字声就是他的心跳。评委们在灯前犹豫。',
+  cheer:  '<b>欢呼 · CHEER（≥3 灯）</b><br>三灯以上！烟花彩带全开，会场沸腾——这一刻属于他。',
+  sad:    '<b>失落 · SAD（&lt;3 灯）</b><br>不足三灯。会场暗下来，只剩一束追光陪着他的背影。'
+};
+const statusTexts = {
+  idle:'SYS://CONTESTANT · WAITING', answer:'SYS://CONTESTANT · ANSWERING',
+  cheer:'SYS://CONTESTANT · CHEER · ≥3', sad:'SYS://CONTESTANT · SAD · <3'
+};
+function setState(st){
+  document.querySelectorAll('#charHolder .cs').forEach(g=> g.classList.toggle('active', g.dataset.st===st));
+  document.querySelectorAll('.state-tab').forEach(t=> t.classList.toggle('on', t.dataset.state===st));
+  document.getElementById('stateCaption').innerHTML = captions[st];
+  document.getElementById('statusText').textContent = statusTexts[st];
+}
+document.querySelectorAll('.state-tab').forEach(t=> t.addEventListener('click', ()=> setState(t.dataset.state)));
+
+/* 舞台鼠标倾斜 */
+const stage = document.querySelector('.stage'), holder = document.getElementById('charHolder');
+stage.addEventListener('mousemove', e=>{
+  const r = stage.getBoundingClientRect();
+  const x = (e.clientX-r.left)/r.width-0.5, y = (e.clientY-r.top)/r.height-0.5;
+  holder.style.transform = `perspective(700px) rotateY(${x*8}deg) rotateX(${-y*6}deg)`;
+});
+stage.addEventListener('mouseleave', ()=> holder.style.transform='');
+</script>
+</body>
+</html>

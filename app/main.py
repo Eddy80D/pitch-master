@@ -544,6 +544,22 @@ async def health() -> dict[str, Any]:
         "price_yuan": config.PRICE_YUAN,
         "auto_approve": config.AUTO_APPROVE,
         "max_active_sessions_per_ip": config.MAX_ACTIVE_SESSIONS_PER_IP,
+        "bg_video_url": config.BG_VIDEO_URL,
+    }
+
+
+@app.get("/api/judges")
+async def public_judges() -> dict[str, Any]:
+    return {
+        "judges": [
+            {
+                "id": judge["id"],
+                "name": judge.get("display_name") or judge.get("name", judge["id"]),
+                "dimension": judge.get("dimension", ""),
+                "color": judge.get("color", "#3B6FE0"),
+            }
+            for judge in judges.load_judges()
+        ]
     }
 
 

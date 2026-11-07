@@ -195,7 +195,111 @@
     font-size: 13px;
     background: var(--surface-2);
   }
+  /* ---- 开场 UI ---- */
+  .topbar { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 28px; }
+  .brand { font-size: 20px; font-weight: 800; letter-spacing: .5px; }
+  .brand span { color: var(--blue); }
+  .brand small { color: var(--ink-2); font-weight: 400; font-size: 12px; margin-left: 8px; letter-spacing: 1px; }
+  .flow-nav { margin-left: auto; color: var(--ink-2); font-size: 12px; letter-spacing: .5px; }
+
+  .hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: linear-gradient(135deg, #FFFFFF 0%, var(--surface-2) 55%, #F0EDE6 100%);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+  }
+  .hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .hero-overlay { position: absolute; inset: 0; background: rgba(255,255,255,.55); }
+  .hero-content { position: relative; z-index: 2; padding: 44px 20px; }
+  .hero-kicker { color: var(--blue); font-size: 11px; letter-spacing: 4px; }
+  .hero-title { font-size: 72px; line-height: 1.1; margin: 12px 0 10px; letter-spacing: 6px; font-weight: 800; color: var(--ink); }
+  .hero-title span { color: var(--blue); }
+  .hero-sub { color: var(--ink-2); font-size: 14px; letter-spacing: 1px; margin: 0; }
+
+  .glass {
+    background: rgba(255,255,255,.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,.85);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 22px;
+  }
+  .form-panel { margin-bottom: 28px; }
+  .step-label { color: var(--ink-2); font-size: 13px; letter-spacing: 1px; margin-bottom: 14px; }
+  .step-label span { color: var(--blue); font-size: 11px; margin-left: 6px; letter-spacing: 1.5px; }
+  .glass form { background: transparent; border: 0; box-shadow: none; padding: 0; }
+
+  .lineup-section { margin-top: 6px; }
+  .lineup-head h2 { font-size: 20px; margin: 0 0 4px; color: var(--ink); }
+  .lineup-head h2 span { color: var(--ink-2); font-size: 11px; letter-spacing: 2px; margin-left: 8px; font-weight: 500; }
+  .lineup-head p { color: var(--ink-2); font-size: 12px; margin: 0 0 14px; }
+  .lineup-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .judge-lineup-card {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(155deg, var(--role-color), var(--role-dark));
+    box-shadow: var(--shadow);
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .judge-lineup-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(26,26,46,.18); }
+  .card-top { position: absolute; top: 14px; left: 16px; z-index: 3; font-weight: 700; font-size: 16px; letter-spacing: .5px; }
+  .card-role { position: absolute; top: 16px; right: 16px; z-index: 3; font-size: 11px; letter-spacing: 1px; opacity: .8; }
+  .card-body { position: absolute; inset: 0; display: grid; place-items: center; }
+  .card-question {
+    font-size: 82px;
+    font-weight: 800;
+    color: rgba(255,255,255,.88);
+    text-shadow: 0 6px 18px rgba(0,0,0,.18);
+    animation: jelly 4.2s ease-in-out infinite;
+    transition: opacity .2s;
+  }
+  .card-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 22px;
+    opacity: 0;
+    transition: opacity .25s ease;
+    z-index: 2;
+  }
+  .judge-lineup-card:hover .card-image { opacity: 1; }
+  .judge-lineup-card:hover .card-question { opacity: 0; }
+  .card-bottom { position: absolute; bottom: 14px; left: 16px; right: 16px; z-index: 3; font-size: 13px; opacity: .9; }
+  @keyframes jelly {
+    0%, 100% { transform: translateY(0) scale(1, 1); }
+    30% { transform: translateY(-7px) scale(1.04, .96); }
+    60% { transform: translateY(2px) scale(.97, 1.03); }
+  }
+  .footer-hint { color: var(--ink-2); font-size: 12px; text-align: center; margin: 26px 0 0; }
+
+  .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .modal.hidden { display: none; }
+  .modal-backdrop { position: absolute; inset: 0; background: rgba(26,26,46,.55); }
+  .modal-panel { position: relative; width: min(860px, 92vw); height: 85vh; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(26,26,46,.3); }
+  .modal-panel iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .modal-close { position: absolute; top: 10px; right: 12px; z-index: 2; width: 34px; height: 34px; padding: 0; border-radius: 50%; background: rgba(26,26,46,.55); color: #fff; font-size: 20px; line-height: 1; }
+
   .hidden { display: none !important; }
+  @media (max-width: 760px) {
+    .hero-title { font-size: 52px; letter-spacing: 4px; }
+    .lineup-grid { grid-template-columns: 1fr; }
+    .flow-nav { width: 100%; margin-left: 0; }
+  }
   @media (max-width: 640px) {
     main { padding: 36px 18px 60px; }
     h1 { font-size: 27px; }
@@ -205,15 +309,26 @@
 </head>
 <body>
 <main>
-  <header>
-    <div class="eyebrow">JUNCTION CHINA 2026 · MiMo Track</div>
-    <h1>路演<span>大师</span> PitchMaster</h1>
-    <p class="sub">投一个仓库，让五位 AI 评委先替你挑刺。<br>初评 → 自我介绍 → 答辩 → 复议 → 亮椅 → 报告。</p>
+  <header class="topbar">
+    <div class="brand">路演<span>大师</span><small>PitchMaster</small></div>
+    <nav class="flow-nav">初评 → 自我介绍 → 答辩 → 复议 → 亮椅 → 报告</nav>
   </header>
 
   <!-- 一级：提交页 -->
   <section id="screen-submit">
-    <form id="form">
+    <section class="hero">
+      <video id="hero-video" class="hero-video hidden" muted loop playsinline autoplay></video>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="hero-kicker">JUNCTION CHINA 2026 · MIMO TRACK</div>
+        <h1 class="hero-title">路演<span>大师</span></h1>
+        <p class="hero-sub">好声音式 AI 评审 · 五位评委先替你挑刺</p>
+      </div>
+    </section>
+
+    <div class="glass form-panel">
+      <div class="step-label">填写作品信息 <span>STEP 1 / SUBMIT</span></div>
+      <form id="form">
       <div>
         <label for="repo">GitHub 仓库（必填）</label>
         <input id="repo" name="repo" placeholder="https://github.com/owner/repo" autocomplete="off" required>
@@ -256,6 +371,17 @@
       </div>
       <p id="pay-hint" class="hint"></p>
     </div>
+    </div>
+
+    <section class="lineup-section">
+      <div class="lineup-head">
+        <h2>评委天团 <span>THE AI JUDGE PANEL</span></h2>
+        <p>悬停看形象 · 点击进资料卡</p>
+      </div>
+      <div id="judge-lineup" class="lineup-grid"></div>
+    </section>
+
+    <p class="footer-hint">仓库以浅克隆方式读取，只读不写 · 演示模式默认 4 问 / 每问 45 秒</p>
   </section>
 
   <!-- 二级：舞台页 -->
@@ -320,6 +446,14 @@
     <section id="log-report"></section>
   </section>
 </main>
+
+<div id="card-modal" class="modal hidden">
+  <div class="modal-backdrop" data-close="1"></div>
+  <div class="modal-panel">
+    <button id="card-close" class="modal-close" type="button" aria-label="关闭">×</button>
+    <iframe id="card-frame" title="角色资料卡"></iframe>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -953,6 +1087,96 @@
     history.replaceState(null, "", location.pathname);
     location.reload();
   });
+
+  // ---------------- 开场 UI：评委天团 / 资料卡 / 背景视频
+  const JUDGE_FALLBACK = [
+    { id: "tech", name: "比特", dimension: "完成度", color: "#4A5568" },
+    { id: "biz", name: "商业大亨", dimension: "商业化", color: "#C94A4A" },
+    { id: "vision", name: "远见博士", dimension: "创新性", color: "#3B6FE0" },
+    { id: "originality", name: "摩斯", dimension: "原创性", color: "#3D9B6A" },
+    { id: "aesthetic", name: "洛克", dimension: "美学", color: "#E75A9C" },
+    { id: "player", name: "选手", dimension: "这个位置，是你的", color: "#8B8D98" },
+  ];
+
+  function shadeColor(hex, factor = 0.3) {
+    const clean = String(hex || "#8B8D98").replace("#", "");
+    const n = parseInt(clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean, 16);
+    const r = (n >> 16) & 255;
+    const g = (n >> 8) & 255;
+    const b = n & 255;
+    const mix = (value, target) => Math.round(value * (1 - factor) + target * factor);
+    return `rgb(${mix(r, 26)}, ${mix(g, 26)}, ${mix(b, 46)})`;
+  }
+
+  function makeLineupCard(item) {
+    const card = el("article", "judge-lineup-card");
+    card.style.setProperty("--role-color", item.color);
+    card.style.setProperty("--role-dark", shadeColor(item.color));
+    card.append(
+      el("div", "card-top", item.name),
+      el("div", "card-role", item.id === "player" ? "选手" : "评委")
+    );
+
+    const body = el("div", "card-body");
+    body.append(el("span", "card-question", "?"));
+    if (item.id !== "player") {
+      const image = document.createElement("img");
+      image.className = "card-image";
+      image.alt = item.name;
+      image.src = `/static/judges/${item.id}.png`;
+      image.addEventListener("error", () => image.remove());
+      body.append(image);
+    }
+    card.append(body, el("div", "card-bottom", item.dimension));
+    card.addEventListener("click", () => openCard(item.id));
+    return card;
+  }
+
+  function renderLineup(items) {
+    $("#judge-lineup").replaceChildren(...items.map(makeLineupCard));
+  }
+
+  function openCard(id) {
+    $("#card-frame").src = `/static/cards/${id}.html`;
+    $("#card-modal").classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeCard() {
+    $("#card-modal").classList.add("hidden");
+    $("#card-frame").src = "about:blank";
+    document.body.style.overflow = "";
+  }
+
+  function initOpening() {
+    renderLineup(JUDGE_FALLBACK);
+    fetch("/api/judges")
+      .then((resp) => (resp.ok ? resp.json() : null))
+      .then((data) => {
+        if (!data || !Array.isArray(data.judges)) return;
+        renderLineup([...data.judges, JUDGE_FALLBACK[JUDGE_FALLBACK.length - 1]]);
+      })
+      .catch(() => {});
+
+    fetch("/api/health")
+      .then((resp) => (resp.ok ? resp.json() : null))
+      .then((data) => {
+        if (!data || !data.bg_video_url) return;
+        const video = $("#hero-video");
+        video.src = data.bg_video_url;
+        video.classList.remove("hidden");
+        video.play().catch(() => {});
+      })
+      .catch(() => {});
+
+    $("#card-close").addEventListener("click", closeCard);
+    document.querySelector("#card-modal .modal-backdrop").addEventListener("click", closeCard);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeCard();
+    });
+  }
+
+  initOpening();
 
   // 刷新恢复：URL 上带 ?s=session_id
   const params = new URLSearchParams(location.search);

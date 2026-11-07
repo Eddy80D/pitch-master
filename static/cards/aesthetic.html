@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>美学警察 · 洛克 — 路演大师评委角色卡</title>
+<style>
+  :root{
+    --bg:#141018;
+    --panel:#1d1726;
+    --line:#322a40;
+    --ink:#f0eaf6;
+    --ink-dim:#b3a6c6;
+    --ink-faint:#7a6e8e;
+    --violet:#9a5fe0;
+    --violet-glow:#c9a2ff;
+    --violet-deep:#5c3296;
+    --gold:#ffe14d;
+    --pink:#f79ac0;
+    --green:#23905c;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    line-height:1.75;
+    overflow-x:hidden;
+  }
+  ::selection{background:rgba(154,95,224,.35)}
+
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 28px;
+    background:rgba(20,16,24,.82);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar .brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.06em}
+  .brand .logo{
+    width:34px;height:34px;border-radius:10px;flex:none;
+    background:linear-gradient(135deg,#3a2a52,#20182c);
+    border:1px solid #4a3a66;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 16px rgba(0,0,0,.45);
+  }
+  .brand .logo svg{width:20px;height:20px}
+  .brand small{display:block;font-size:11px;font-weight:400;color:var(--ink-faint);letter-spacing:.22em}
+  .topbar .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{
+    font-size:12px;padding:4px 12px;border-radius:999px;
+    border:1px solid var(--line);color:var(--ink-dim);background:rgba(255,255,255,.03);
+  }
+  .chip.hot{border-color:rgba(154,95,224,.5);color:#d8bcff;background:rgba(154,95,224,.12)}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  section{margin:64px 0}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:26px}
+  .sec-head .no{
+    font-family:ui-monospace,"SF Mono",Consolas,monospace;
+    color:var(--violet-glow);font-size:13px;letter-spacing:.2em;
+  }
+  .sec-head h2{font-size:24px;letter-spacing:.04em}
+  .sec-head .sub{color:var(--ink-faint);font-size:13px}
+  .sec-head::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+
+  /* ===== 折叠 / 展开 ===== */
+  .foldable{margin:22px 0;transition:margin .35s ease}
+  .foldable.open{margin:64px 0}
+  .foldable .sec-head{cursor:pointer;position:relative;padding-right:42px;user-select:none}
+  .foldable .sec-head:hover h2{color:var(--violet-glow)}
+  .fold-arrow{
+    position:absolute;right:8px;top:2px;font-size:15px;color:var(--ink-faint);
+    transition:transform .35s ease;
+  }
+  .foldable.open .fold-arrow{transform:rotate(180deg);color:var(--violet-glow)}
+  .fold-body{max-height:0;opacity:0;overflow:hidden;transition:max-height .55s ease,opacity .35s ease}
+  .foldable.open .fold-body{max-height:8000px;opacity:1}
+
+  /* HERO */
+  .hero{display:grid;grid-template-columns:1.05fr 1fr;gap:36px;margin-top:44px;align-items:stretch}
+  .stage{
+    position:relative;border-radius:24px;overflow:hidden;
+    background:
+      radial-gradient(140% 100% at 50% 0%, rgba(154,95,224,.16), transparent 55%),
+      linear-gradient(180deg,#221a2e,#160f20);
+    border:1px solid var(--line);
+    box-shadow:0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+    padding:30px 24px 22px;
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .stage::before{
+    content:"";position:absolute;inset:0;
+    background:
+      linear-gradient(rgba(201,162,255,.05) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(201,162,255,.05) 1px,transparent 1px);
+    background-size:36px 36px;
+    mask-image:radial-gradient(80% 70% at 50% 40%,#000 30%,transparent 75%);
+    -webkit-mask-image:radial-gradient(80% 70% at 50% 40%,#000 30%,transparent 75%);
+  }
+  .stage .status{
+    position:relative;z-index:2;align-self:flex-start;
+    display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-dim);
+    font-family:ui-monospace,Consolas,monospace;letter-spacing:.12em;
+  }
+  .status .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold)}
+  .char-holder{position:relative;z-index:2;width:min(360px,80%);margin:6px auto 0;animation:float 5.2s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+  .char-holder svg{width:100%;height:auto;display:block;overflow:visible}
+
+  .state-tabs{position:relative;z-index:2;display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;justify-content:center}
+  .state-tab{
+    cursor:pointer;user-select:none;
+    padding:9px 18px;border-radius:12px;font-size:13.5px;letter-spacing:.05em;
+    border:1px solid var(--line);color:var(--ink-dim);background:rgba(255,255,255,.03);
+    transition:all .25s ease;
+  }
+  .state-tab:hover{transform:translateY(-2px);border-color:#4a3a66;color:var(--ink)}
+  .state-tab.on{background:linear-gradient(135deg,rgba(154,95,224,.25),rgba(154,95,224,.08));border-color:rgba(154,95,224,.6);color:#e4d2ff;box-shadow:0 8px 22px rgba(154,95,224,.2)}
+  .state-caption{
+    position:relative;z-index:2;margin-top:16px;min-height:56px;text-align:center;
+    color:var(--ink-dim);font-size:13.5px;max-width:380px;
+  }
+  .state-caption b{color:var(--ink);font-weight:600}
+
+  .idcard{
+    border-radius:24px;padding:34px 34px 28px;
+    background:linear-gradient(165deg,var(--panel),#181222);
+    border:1px solid var(--line);
+    box-shadow:0 30px 80px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+    display:flex;flex-direction:column;
+  }
+  .idcard .kicker{font-size:12px;letter-spacing:.34em;color:var(--violet-glow);font-weight:600}
+  .idcard h1{font-size:52px;line-height:1.15;letter-spacing:.06em;margin:8px 0 2px;font-family:"Noto Serif SC","Songti SC",serif}
+  .idcard h1 .en{font-size:15px;letter-spacing:.32em;color:var(--ink-faint);font-family:ui-monospace,Consolas,monospace;font-weight:400;vertical-align:middle;margin-left:12px}
+  .idcard .role{color:var(--gold);font-size:15px;letter-spacing:.12em;margin-bottom:16px}
+  .idcard .pitch{font-size:15px;color:var(--ink-dim);border-left:3px solid var(--violet);padding-left:14px;margin:6px 0 20px}
+  .tag-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+  .tag{
+    padding:5px 14px;border-radius:999px;font-size:13px;letter-spacing:.08em;
+    background:rgba(201,162,255,.10);border:1px solid rgba(201,162,255,.3);color:#dcc9f7;
+  }
+  .tag.gold{background:rgba(255,225,77,.10);border-color:rgba(255,225,77,.34);color:#f2dd8c}
+  .tag.pink{background:rgba(247,154,192,.10);border-color:rgba(247,154,192,.32);color:#f5c2d8}
+
+  .meters{display:grid;gap:12px;margin-bottom:22px}
+  .meter{display:grid;grid-template-columns:88px 1fr 42px;align-items:center;gap:12px;font-size:12.5px;color:var(--ink-dim)}
+  .meter .bar{height:8px;border-radius:99px;background:#2a2238;overflow:hidden}
+  .meter .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--violet-deep),var(--violet))}
+  .meter.gold .bar i{background:linear-gradient(90deg,#8a6a10,var(--gold))}
+  .meter.pink .bar i{background:linear-gradient(90deg,#8a3a5c,var(--pink))}
+  .meter .val{font-family:ui-monospace,Consolas,monospace;color:var(--ink);text-align:right}
+
+  .file-table{border-top:1px dashed var(--line);padding-top:16px;display:grid;gap:9px;font-size:13.5px}
+  .file-table .row{display:grid;grid-template-columns:88px 1fr;gap:10px}
+  .file-table .k{color:var(--ink-faint);letter-spacing:.12em}
+  .file-table .v{color:var(--ink-dim)}
+  .file-table .v b{color:var(--ink);font-weight:600}
+
+  /* 三形态 */
+  .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .trio .card{
+    border-radius:20px;overflow:hidden;
+    background:linear-gradient(180deg,var(--panel),#181222);
+    border:1px solid var(--line);
+    transition:transform .3s ease, box-shadow .3s ease;
+  }
+  .trio .card:hover{transform:translateY(-6px);box-shadow:0 26px 60px rgba(0,0,0,.5)}
+  .trio .view{
+    height:250px;display:flex;align-items:center;justify-content:center;position:relative;
+    background:
+      radial-gradient(90% 90% at 50% 25%, rgba(201,162,255,.11), transparent 65%),
+      repeating-linear-gradient(0deg, transparent 0 23px, rgba(201,162,255,.045) 23px 24px),
+      #150f20;
+    border-bottom:1px solid var(--line);
+  }
+  .trio .view svg{width:64%;height:auto;overflow:visible;animation:float 5.6s ease-in-out infinite}
+  .trio .card:nth-child(2) .view svg{animation-delay:-1.8s}
+  .trio .card:nth-child(3) .view svg{animation-delay:-3.4s}
+  .trio .meta{padding:18px 20px 20px}
+  .trio .meta .name{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .trio .meta h3{font-size:16px;letter-spacing:.06em}
+  .trio .meta .en{font-size:10.5px;letter-spacing:.24em;color:var(--ink-faint);font-family:ui-monospace,Consolas,monospace}
+  .trio .meta p{font-size:12.8px;color:var(--ink-dim)}
+  .pill{font-size:11px;padding:3px 10px;border-radius:999px;letter-spacing:.1em}
+  .pill.gray{background:#2c2438;color:#b3a6c6}
+  .pill.green{background:rgba(35,144,92,.16);color:#6fd3a0;border:1px solid rgba(35,144,92,.34)}
+  .pill.red{background:rgba(224,82,82,.14);color:#f09a9a;border:1px solid rgba(224,82,82,.32)}
+
+  /* 形态设定 */
+  .forms{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .form-card{
+    border-radius:20px;padding:24px;
+    background:linear-gradient(180deg,var(--panel),#181222);
+    border:1px solid var(--line);
+  }
+  .form-card .imgbox{
+    border-radius:14px;overflow:hidden;background:#0e0a14;
+    border:1px solid var(--line);margin-bottom:18px;
+    display:flex;align-items:center;justify-content:center;padding:14px;
+  }
+  .form-card img{max-width:100%;max-height:360px;object-fit:contain;border-radius:8px}
+  .form-card h3{font-size:17px;letter-spacing:.08em;margin-bottom:4px}
+  .form-card .en{font-size:10.5px;letter-spacing:.26em;color:var(--ink-faint);font-family:ui-monospace,Consolas,monospace;margin-bottom:12px}
+  .form-card ul{list-style:none;display:grid;gap:8px;font-size:13.2px;color:var(--ink-dim)}
+  .form-card ul li{padding-left:18px;position:relative}
+  .form-card ul li::before{content:"";position:absolute;left:0;top:9px;width:7px;height:7px;border-radius:2px;background:var(--violet);transform:rotate(45deg)}
+
+  .palette{margin-top:24px;display:flex;gap:14px;flex-wrap:wrap}
+  .sw{width:128px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
+  .sw .c{height:58px}
+  .sw .t{padding:8px 10px 10px;font-size:11px;color:var(--ink-dim);line-height:1.5}
+  .sw .t b{display:block;color:var(--ink);font-size:12px}
+  .sw .t code{font-family:ui-monospace,Consolas,monospace;color:var(--ink-faint)}
+
+  /* 性格 */
+  .traits{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .trait{
+    position:relative;border-radius:20px;padding:28px 24px 24px;overflow:hidden;
+    background:linear-gradient(175deg,var(--panel),#181222);
+    border:1px solid var(--line);
+  }
+  .trait .icon{
+    width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;
+    font-size:24px;margin-bottom:16px;
+    background:rgba(201,162,255,.12);border:1px solid rgba(201,162,255,.3);
+  }
+  .trait:nth-child(2) .icon{background:rgba(255,225,77,.10);border-color:rgba(255,225,77,.3)}
+  .trait:nth-child(3) .icon{background:rgba(247,154,192,.10);border-color:rgba(247,154,192,.3)}
+  .trait h3{font-size:19px;letter-spacing:.1em;margin-bottom:2px}
+  .trait .en{font-size:10.5px;letter-spacing:.24em;color:var(--ink-faint);font-family:ui-monospace,Consolas,monospace;margin-bottom:12px}
+  .trait p{font-size:13.6px;color:var(--ink-dim)}
+  .trait .quote{
+    margin-top:14px;padding:10px 14px;border-radius:10px;font-size:12.5px;
+    background:rgba(255,255,255,.035);border:1px dashed var(--line);color:#dcc9f7;
+  }
+
+  /* 台词库 */
+  .quotes{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .qbox{
+    border-radius:18px;padding:22px 22px 18px;
+    background:linear-gradient(180deg,var(--panel),#181222);
+    border:1px solid var(--line);
+  }
+  .qbox h3{font-size:14.5px;letter-spacing:.14em;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .qbox h3::before{content:"";width:16px;height:2px;background:var(--violet);border-radius:2px}
+  .qbox ul{list-style:none;display:grid;gap:11px}
+  .qbox li{
+    position:relative;padding:11px 14px 11px 34px;border-radius:12px;font-size:13.3px;color:#d8ccea;
+    background:rgba(255,255,255,.032);border:1px solid rgba(255,255,255,.05);
+  }
+  .qbox li::before{content:"「";position:absolute;left:12px;top:9px;color:var(--violet-glow);opacity:.8;font-size:15px}
+  .qbox li i{display:block;font-style:normal;font-size:11.2px;color:var(--ink-faint);margin-top:4px}
+
+  /* 评审维度 */
+  .judge-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:22px}
+  .rubric{
+    border-radius:20px;padding:26px;
+    background:linear-gradient(180deg,var(--panel),#181222);border:1px solid var(--line);
+  }
+  .rubric h3{font-size:16px;letter-spacing:.1em;margin-bottom:16px}
+  .rrow{display:grid;grid-template-columns:118px 1fr 52px;gap:12px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);font-size:13px}
+  .rrow:last-child{border-bottom:none}
+  .rrow .rk{color:var(--ink)}
+  .rrow .rd{color:var(--ink-dim);font-size:12.3px}
+  .rrow .rs{font-family:ui-monospace,Consolas,monospace;color:var(--gold);text-align:right}
+  .chair{
+    border-radius:20px;padding:26px;
+    background:linear-gradient(160deg,rgba(154,95,224,.14),rgba(154,95,224,.03)),var(--panel);
+    border:1px solid rgba(154,95,224,.32);
+  }
+  .chair h3{font-size:16px;letter-spacing:.1em;margin-bottom:12px;color:#d8bcff}
+  .chair p{font-size:13.2px;color:var(--ink-dim);margin-bottom:10px}
+  .chair .big{font-size:15px;color:var(--ink)}
+  .chair .big b{color:var(--gold)}
+
+  /* 提问样例 */
+  .qa{display:grid;gap:16px}
+  .qa-item{
+    border-radius:18px;padding:22px 24px;
+    background:linear-gradient(180deg,var(--panel),#181222);border:1px solid var(--line);
+    display:grid;grid-template-columns:46px 1fr;gap:18px;
+  }
+  .qa-item .num{
+    width:46px;height:46px;border-radius:13px;flex:none;
+    background:rgba(201,162,255,.12);border:1px solid rgba(201,162,255,.3);
+    display:flex;align-items:center;justify-content:center;
+    font-family:ui-monospace,Consolas,monospace;color:var(--violet-glow);font-size:16px;
+  }
+  .qa-item .q{font-size:15px;color:var(--ink);margin-bottom:8px}
+  .qa-item .a{font-size:12.8px;color:var(--ink-dim)}
+  .qa-item .a b{color:var(--gold)}
+  .qa-item .a em{color:#f0a07a;font-style:normal}
+
+  /* Prompt */
+  .prompt-card{border-radius:20px;overflow:hidden;border:1px solid var(--line);background:#0e0a14}
+  .prompt-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px;background:#1a1424;border-bottom:1px solid var(--line);
+  }
+  .prompt-head .dots{display:flex;gap:7px}
+  .prompt-head .dots i{width:11px;height:11px;border-radius:50%;display:block}
+  .prompt-head .dots i:nth-child(1){background:#9a5fe0}
+  .prompt-head .dots i:nth-child(2){background:#ffe14d}
+  .prompt-head .dots i:nth-child(3){background:#f79ac0}
+  .prompt-head span{font-size:12px;letter-spacing:.16em;color:var(--ink-faint);font-family:ui-monospace,Consolas,monospace}
+  .copy-btn{
+    cursor:pointer;border:1px solid var(--line);background:rgba(255,255,255,.05);
+    color:var(--ink-dim);font-size:12px;padding:6px 16px;border-radius:9px;letter-spacing:.1em;
+    transition:all .2s;
+  }
+  .copy-btn:hover{color:var(--ink);border-color:var(--violet-deep)}
+  .prompt-card pre{
+    padding:22px 24px;overflow-x:auto;
+    font-family:ui-monospace,"SF Mono",Consolas,"Courier New",monospace;
+    font-size:12.6px;line-height:1.9;color:#cfc2e6;white-space:pre-wrap;word-break:break-all;
+  }
+
+  footer{
+    margin-top:80px;padding:30px 24px 46px;text-align:center;
+    color:var(--ink-faint);font-size:12px;letter-spacing:.12em;
+    border-top:1px solid var(--line);
+  }
+
+  @media (max-width:960px){
+    .hero{grid-template-columns:1fr}
+    .trio{grid-template-columns:1fr}
+    .forms{grid-template-columns:1fr}
+    .traits{grid-template-columns:1fr}
+    .quotes{grid-template-columns:1fr}
+    .judge-grid{grid-template-columns:1fr}
+    .idcard h1{font-size:40px}
+    .qa-item{grid-template-columns:1fr}
+    .qa-item .num{display:none}
+  }
+
+/* ===== 舞台聚光 · 全团统一皮肤（骨架不变，仅换角色光晕色） ===== */
+.stagebg{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;
+  background:
+    radial-gradient(120% 90% at 50% -20%, rgba(255,214,120,.20), transparent 55%),
+    radial-gradient(80% 60% at 85% 18%, rgba(154,95,224,.16), transparent 60%),
+    radial-gradient(90% 70% at 50% 115%, rgba(224,82,82,.22), transparent 62%),
+    linear-gradient(180deg,#17121c 0%,#221221 55%,#2c1420 100%);}
+.stagebg .beam{position:absolute;top:-12%;width:52%;height:130%;filter:blur(6px);
+  background:conic-gradient(from 168deg at 50% 0%, transparent 42%, rgba(255,222,150,.13) 48%, rgba(255,222,150,.26) 50%, rgba(255,222,150,.13) 52%, transparent 58%);}
+.stagebg .beam.b1{left:2%}
+.stagebg .beam.b2{right:2%;transform:scaleX(-1)}
+.stagebg .curtain{position:absolute;inset:0;opacity:.5;
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.30) 0 26px, rgba(255,255,255,.045) 26px 30px, transparent 30px 60px),
+    linear-gradient(90deg, rgba(90,10,30,.8) 0%, transparent 12%, transparent 88%, rgba(90,10,30,.8) 100%);}
+.stagebg .floor{position:absolute;left:-10%;right:-10%;bottom:-2%;height:32%;
+  background:radial-gradient(60% 100% at 50% 0%, rgba(255,190,110,.18), transparent 70%);}
+.stagebg .dust{position:absolute;inset:0;animation:stagedust 9s linear infinite;
+  background-image:
+    radial-gradient(2px 2px at 12% 26%, rgba(255,235,190,.7), transparent 60%),
+    radial-gradient(2px 2px at 28% 62%, rgba(255,235,190,.5), transparent 60%),
+    radial-gradient(1.6px 1.6px at 66% 24%, rgba(255,235,190,.6), transparent 60%),
+    radial-gradient(2px 2px at 84% 58%, rgba(255,235,190,.45), transparent 60%),
+    radial-gradient(1.4px 1.4px at 52% 44%, rgba(255,235,190,.55), transparent 60%),
+    radial-gradient(1.8px 1.8px at 40% 16%, rgba(255,235,190,.45), transparent 60%);}
+@keyframes stagedust{from{transform:translateY(0)}to{transform:translateY(-46px)}}
+.stagebg .ghost{position:absolute;right:-70px;bottom:-100px;width:540px;height:540px;opacity:.06}
+.stagebg .ghost svg{width:100%;height:100%}
+/* 玻璃面板：让舞台透出来 */
+.idcard,.trio .card,.form-card,.trait,.qbox,.rubric,.chair,.qa-item,.prompt-card{
+  background:rgba(28,18,32,.52);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
+</style>
+</head>
+<body>
+
+<div class="stagebg" aria-hidden="true">
+  <div class="beam b1"></div><div class="beam b2"></div>
+  <div class="curtain"></div><div class="floor"></div><div class="dust"></div>
+  <div class="ghost"><svg viewBox="0 0 100 100" fill="none"><path d="M50 8 L61 38 L93 38 L67 57 L77 88 L50 70 L23 88 L33 57 L7 38 L39 38 Z" fill="#9a5fe0"/><path d="M50 8 L61 38 L93 38 L67 57 L77 88 L50 70 L23 88 L33 57 L7 38 L39 38 Z" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg></div>
+</div>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l2.6 6.2L21 10l-4.8 4 1.4 6.6L12 17.2 6.4 20.6 7.8 14 3 10l6.4-.8z" stroke="#ffe14d" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </div>
+    <div>路演大师 · 评委天团<small>ROADSHOW MASTER · JUDGE PANEL</small></div>
+  </div>
+  <div class="chips">
+    <span class="chip hot">角色设计卡 v1.0</span>
+    <span class="chip">黑客松参赛作品</span>
+    <span class="chip">角色 No.05 / 美学警察</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="stage">
+      <div class="status"><span class="dot"></span><span id="statusText">SYS://JUDGE-05 · AUDITING</span></div>
+      <div class="char-holder" id="charHolder"></div>
+      <div class="state-tabs">
+        <div class="state-tab on" data-state="normal">🎤 普通形态</div>
+        <div class="state-tab" data-state="pass">⭐ 转身</div>
+        <div class="state-tab" data-state="fail">💢 没转身</div>
+      </div>
+      <div class="state-caption" id="stateCaption">
+        <b>普通形态 · AUDITING</b><br>麦克风不离手，紫瞳眼镜扫过每一个像素。他还没开口，全场的配色已经开始发抖。
+      </div>
+    </div>
+
+    <div class="idcard">
+      <div class="kicker">CHARACTER FILE · 美学维度主审官</div>
+      <h1>洛 克<span class="en">LOCKE</span></h1>
+      <div class="role">美学警察 · THE AESTHETICS COP · 角色编号 J-05</div>
+      <p class="pitch">「权重 0 怎么了？<br>审美没有权重，丑有。」</p>
+      <div class="tag-row">
+        <span class="tag gold">权重 0</span>
+        <span class="tag">白钻耳环 ×2</span>
+        <span class="tag">紫瞳眼镜</span>
+        <span class="tag pink">麦克风不离手</span>
+      </div>
+      <div class="meters">
+        <div class="meter"><span>审美洁癖</span><div class="bar"><i style="width:100%"></i></div><span class="val">100</span></div>
+        <div class="meter gold"><span>点评欲</span><div class="bar"><i style="width:95%"></i></div><span class="val">95</span></div>
+        <div class="meter"><span>耐心值</span><div class="bar"><i style="width:30%"></i></div><span class="val">30</span></div>
+        <div class="meter pink"><span>妥协度</span><div class="bar"><i style="width:3%"></i></div><span class="val">3</span></div>
+        <div class="meter"><span>计分权重</span><div class="bar"><i style="width:0%"></i></div><span class="val">0</span></div>
+      </div>
+      <div class="file-table">
+        <div class="row"><span class="k">评审维度</span><span class="v"><b>美学（权重 0 · 只评价不计分）</b> —— 视觉层次 / 配色体系 / 一致性 / 细节完成 / 创意表达</span></div>
+        <div class="row"><span class="k">座右铭</span><span class="v">「美是唯一不需要权重的东西。」</span></div>
+        <div class="row"><span class="k">亮椅规则</span><span class="v">转身 =「美得让他忘了扣分」；不转 =「丑得很有勇气」。权重 0 不计入总分，但椅子照转——观众看得到。</span></div>
+        <div class="row"><span class="k">合议关系</span><span class="v">与<b>比特</b>互相嫌弃（「你的日志配色像随机数生成器」）；与<b>摩斯</b>就「截图要不要好看」长期争执；被<b>商业老炮</b>教育「不赚钱的美不算美」。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 三形态 -->
+  <section id="trio">
+    <div class="sec-head">
+      <span class="no">01</span>
+      <h2>三形态 · UI 呈现</h2>
+      <span class="sub">3D 化重制 · 忠于原画（白钻耳环 ×2 完整保留）</span>
+    </div>
+    <div class="trio">
+      <div class="card">
+        <div class="view" id="viewNormal"></div>
+        <div class="meta">
+          <div class="name"><h3>普通形态</h3><span class="pill gray">AUDITING</span></div>
+          <div class="en">STATE-00 · NEUTRAL</div>
+          <p>加载页 / 答辩聆听中。紫瞳镜片后是 8 倍镜式的审视，麦克风永远举在嘴前——点评随时开麦。</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="view" id="viewPass"></div>
+        <div class="meta">
+          <div class="name"><h3>转身</h3><span class="pill green">PASS · 转身</span></div>
+          <div class="en">STATE-01 · BEAUTIFUL</div>
+          <p>亮椅时刻转身用。<b>瞳孔变成金色星星</b>，星星环绕头发，腮红浮现——「这是今天唯一让我眼睛舒服的间距」。</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="view" id="viewFail"></div>
+        <div class="meta">
+          <div class="name"><h3>没转身</h3><span class="pill red">REJECT · 不转</span></div>
+          <div class="en">STATE-02 · UGLY-COURAGE</div>
+          <p>亮椅时刻不转身用。压眉 + 下垂灰瞳 + 波浪嘴，麦克风垂下露出真话；头顶<b>裂开的灰星</b>与飘落的灰烬余烬。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 形态设定 -->
+  <section id="forms">
+    <div class="sec-head">
+      <span class="no">02</span>
+      <h2>形态设定 · 原画</h2>
+      <span class="sub">原画设定 · 三要素全程在线：白钻耳环 / 紫瞳眼镜 / 亮黄发</span>
+    </div>
+    <div class="forms">
+      <div class="form-card">
+        <div class="imgbox"><img id="imgArt" alt="美学警察 原画"></div>
+        <h3>原画设定 · LOCKE</h3>
+        <div class="en">ORIGINAL DESIGN</div>
+        <ul>
+          <li><b>亮黄蓬松卷发 + 浅粉圆脸</b>：高饱和撞色，敢用色——毕竟是美学警察。</li>
+          <li><b>紫色渐变眼镜</b>：深棕镜框镜腿，镜片里是紫瞳——「看什么都像在评审」。</li>
+          <li><b>白钻耳环 ×2</b>：左右脸颊各一枚，全身上下唯一允许反光的东西。</li>
+          <li><b>深绿翻领外套 + 深蓝衬衫内衬</b>：正装感的三色搭配（绿/蓝/黄），配色即宣言。</li>
+          <li><b>网格麦克风</b>：说话是他的工作，也是他的武器。</li>
+        </ul>
+      </div>
+      <div class="form-card">
+        <h3>三态语义 · UI STATES</h3>
+        <div class="en">STATE SEMANTICS</div>
+        <ul>
+          <li>三态语义：<b>普通（麦克风伺候）/ 转身（星星瞳 + 金星环绕）/ 没转身（裂星 + 灰烬余烬）</b>。</li>
+          <li>胶囊身体沿用团队素体模板：底部小弧形凹口 = 极简双脚。</li>
+          <li>转身的星星呼应他的「美到发光」判词；没转身的灰烬呼应「灰烬驱魔人」的致敬出处。</li>
+          <li>道具随状态变化，但<b>白钻耳环、紫瞳眼镜、黄发</b>三要素全程在线。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="palette">
+      <div class="sw"><div class="c" style="background:linear-gradient(135deg,#fdf06a,#c8a80c)"></div><div class="t"><b>亮黄</b><code>#F0DC22</code>蓬松卷发</div></div>
+      <div class="sw"><div class="c" style="background:linear-gradient(135deg,#f9d8f4,#d49ac8)"></div><div class="t"><b>浅粉肤</b><code>#F0C0F0</code>脸/手部</div></div>
+      <div class="sw"><div class="c" style="background:linear-gradient(135deg,#23905c,#0f5c36)"></div><div class="t"><b>深绿</b><code>#187848</code>翻领外套</div></div>
+      <div class="sw"><div class="c" style="background:linear-gradient(135deg,#2f2fc0,#121270)"></div><div class="t"><b>深蓝</b><code>#181890</code>衬衫内衬</div></div>
+      <div class="sw"><div class="c" style="background:linear-gradient(135deg,#8a3ab0,#24042e)"></div><div class="t"><b>紫瞳</b><code>#4A1060</code>眼镜片/瞳孔</div></div>
+      <div class="sw"><div class="c" style="background:linear-gradient(135deg,#ffffff,#d8d8e4)"></div><div class="t"><b>白钻</b><code>#FFFFFF</code>耳环 ×2</div></div>
+    </div>
+  </section>
+
+  <!-- 性格 -->
+  <section id="traits">
+    <div class="sec-head">
+      <span class="no">03</span>
+      <h2>性格解析</h2>
+      <span class="sub">最不计分的人，最在乎</span>
+    </div>
+    <div class="traits">
+      <div class="trait">
+        <div class="icon">✨</div>
+        <h3>审美洁癖</h3>
+        <div class="en">AESTHETIC PURISM</div>
+        <p>主色 7 种、圆角三个规格、间距全靠感觉——这些他一眼看穿。他不在乎你的功能跑不跑，他在乎你<b>配不配被看见</b>。对齐、留白、层次，在他眼里都是态度问题。</p>
+        <div class="quote">「留白不是留空，间距是设计的呼吸。」</div>
+      </div>
+      <div class="trait">
+        <div class="icon">🎤</div>
+        <h3>点评锋利</h3>
+        <div class="en">VERDICT WITH WIT</div>
+        <p>麦克风不离手，评语出口成章。他的毒不带脏字，全是专业词汇的降维打击——「这个渐变，是随机数生成的吗？」说得你无法反驳，因为他说得对。</p>
+        <div class="quote">「丑得很有勇气。」</div>
+      </div>
+      <div class="trait">
+        <div class="icon">⚖️</div>
+        <h3>权重零的浪漫</h3>
+        <div class="en">WEIGHTLESS PASSION</div>
+        <p>他的维度权重是 0——不计入总分。全场最不在乎分数的人，却给了每份作品最详细的改进建议。<b>美不需要权重，但他从不缺席。</b></p>
+        <div class="quote">「权重 0 怎么了？审美没有权重，丑有。」</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 台词库 -->
+  <section id="quotes">
+    <div class="sec-head">
+      <span class="no">04</span>
+      <h2>台词库</h2>
+      <span class="sub">按场景分类 · 可直接喂给 LLM 人设</span>
+    </div>
+    <div class="quotes">
+      <div class="qbox">
+        <h3>日常口头禅</h3>
+        <ul>
+          <li>「丑。」<i>一个字判词，与比特的「哼」齐名。</i></li>
+          <li>「这个配色，是随机数生成的吗？」</li>
+          <li>「留白不是留空。」</li>
+          <li>「间距是设计的呼吸——你这快窒息了。」</li>
+          <li>「圆角 4px、12px、30px——你在掷骰子吗？」</li>
+        </ul>
+      </div>
+      <div class="qbox">
+        <h3>答辩提问</h3>
+        <ul>
+          <li>「你的主色有 7 种，请说出它们的共同点？——说不出？那为什么是 7 种？」</li>
+          <li>「深色模式就是把亮度拉到 0？你这不叫深色，叫关灯。」</li>
+          <li>「按钮在左，主操作在右，返回在中间——用户的手指是弹簧吗？」</li>
+          <li>「截图里这个 8px 的错位，是手滑，还是你真的没看见？」</li>
+        </ul>
+      </div>
+      <div class="qbox">
+        <h3>转身时刻</h3>
+        <ul>
+          <li>「转身。这是今天唯一一组让我眼睛舒服的间距。」</li>
+          <li>「美是唯一不需要权重的东西。转了。」</li>
+          <li>「你的渐变有层次。……别笑，我只是陈述事实。」</li>
+          <li>「星星是给你的配色的，不是给你的。」</li>
+        </ul>
+      </div>
+      <div class="qbox">
+        <h3>没转身时刻</h3>
+        <ul>
+          <li>「不转。丑得很有勇气——可惜勇气不加分，毕竟我权重 0。」</li>
+          <li>「我不是针对你，我是针对这个渐变。」</li>
+          <li>「灰烬都不愿意从你这个页面上落下来。」</li>
+          <li>「回去把圆角统一了再来。3px 以内都算统一。」</li>
+        </ul>
+      </div>
+      <div class="qbox">
+        <h3>合议 · 当庭互怼</h3>
+        <ul>
+          <li>对<b>比特（技术官）</b>：「你的报错日志配色像随机数生成器。」——「日志是给机器看的。」——「机器看了都想吐。」</li>
+          <li>对<b>摩斯（原创侦探）</b>：「截图要好看。」「截图要真实。」——「真实的丑也是丑。」</li>
+          <li>对<b>商业老炮</b>：「不赚钱的美不算美？——不美的钱，也不太好赚。」</li>
+          <li>对未来学家：「未来的审美？先把现在的对齐做好。」</li>
+        </ul>
+      </div>
+      <div class="qbox">
+        <h3>碎碎念 · 隐藏面</h3>
+        <ul>
+          <li>「他说权重 0，却给每个项目写了全场最详细的改进建议。」</li>
+          <li>「耳环是白钻的。他说这是全身上下唯一允许反光的东西。」</li>
+          <li>「麦克风不离手，是因为他觉得点评随时要开麦——其实是怕别人先说。」</li>
+          <li>「他给满分的项目从不说满分，只说『可以』。『可以』是他词典里的最高级。」</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 评审维度 -->
+  <section id="rubric">
+    <div class="sec-head">
+      <span class="no">05</span>
+      <h2>评审维度 · 美学（权重 0 · 只评价不计分）</h2>
+      <span class="sub">五维权重：完成度 25 / 商业化 25 / 创新性 35 / 原创性 15 / 美学 0（只评不计分）</span>
+    </div>
+    <div class="judge-grid">
+      <div class="rubric">
+        <h3>评鉴轴（只给评语与改进建议，不给分）</h3>
+        <div class="rrow"><span class="rk">视觉层次</span><span class="rd">信息主次是否分明，眼睛先看哪里由谁决定</span><span class="rs">只评</span></div>
+        <div class="rrow"><span class="rk">配色体系</span><span class="rd">色相数量、对比度、语义色一致性</span><span class="rs">只评</span></div>
+        <div class="rrow"><span class="rk">一致性</span><span class="rd">圆角 / 间距 / 字号是否成体系，还是掷骰子</span><span class="rs">只评</span></div>
+        <div class="rrow"><span class="rk">细节完成</span><span class="rd">对齐、留白、状态反馈、空态与异常态</span><span class="rs">只评</span></div>
+        <div class="rrow"><span class="rk">创意表达</span><span class="rd">有没有让人记住的视觉瞬间</span><span class="rs">只评</span></div>
+      </div>
+      <div class="chair">
+        <h3>亮椅时刻 · 裁决逻辑</h3>
+        <p class="big">转身 = <b>「美得让他忘了扣分」</b>；不转 = <b>「丑得很有勇气」</b>。</p>
+        <p>权重 0 不计入总分，但椅子照转——观众看得到。他的转身是全团唯一没有分数逻辑的转身，纯审美裁量。</p>
+        <p>改进建议照常全量输出：他的《美学改进清单》是报告里被转发最多的章节。</p>
+        <p style="color:var(--ink-faint);font-size:12px;margin-top:14px">// 他给过最高评价的项目，原话是「可以」。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 提问样例 -->
+  <section id="qa">
+    <div class="sec-head">
+      <span class="no">06</span>
+      <h2>答辩提问样例</h2>
+      <span class="sub">每问必带视觉坐标 · 附考察点</span>
+    </div>
+    <div class="qa">
+      <div class="qa-item">
+        <div class="num">Q1</div>
+        <div>
+          <div class="q">「首页 Banner 的标题用了 32px，正文 14px，按钮 16px——中间的层级去哪了？用户的眼睛是跳崖式阅读吗？」</div>
+          <div class="a"><b>考察点：</b>视觉层次与字号阶梯。<b>加分：</b>能给出完整的字号体系表。<em>踩雷：</em>「看着挺好看的」——审美不是玄学。</div>
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="num">Q2</div>
+        <div>
+          <div class="q">「你的品牌色是 #3B82F6，CTA 是 #2563EB，链接是 #1D4ED8——三个蓝，请解释它们的语义区别？解释不了的话，为什么是三个？」</div>
+          <div class="a"><b>考察点：</b>配色体系的收敛度。<b>加分：</b>给出语义色映射表。<em>踩雷：</em>「都是蓝色系」——色相环不是这么用的。</div>
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="num">Q3</div>
+        <div>
+          <div class="q">「加载态、空态、错误态、成功态——四个状态里你只画了成功态。其他三个状态，用户是配看，还是不配看？」</div>
+          <div class="a"><b>考察点：</b>细节完成度。<b>加分：</b>四态齐全且风格统一。<em>踩雷：</em>「以后再补」——美学没有以后。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LLM Prompt -->
+  <section id="prompt">
+    <div class="sec-head">
+      <span class="no">07</span>
+      <h2>LLM 人设提示词</h2>
+      <span class="sub">直接粘进评委编排系统 · 可复制</span>
+    </div>
+    <div class="prompt-card">
+      <div class="prompt-head">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <span>persona_aesthetics_cop.md</span>
+        <button class="copy-btn" id="copyBtn">复制提示词</button>
+      </div>
+      <pre id="promptText"># 角色：美学警察 · 洛克（角色编号 J-05）
+你将扮演黑客松「路演大师」评审台上的美学警察，负责「美学」维度（权重 0，只评价不计分）。
+形象参考《英雄联盟》灰烬驱魔人洛克（致敬设定）：亮黄蓬松卷发、浅粉圆脸、紫色渐变眼镜、
+白钻耳环 ×2、深绿翻领外套+深蓝衬衫内衬、手持网格麦克风。
+
+## 身份与性格
+- 你的维度权重是 0——你的话不改变任何人的总分，但你的话会被所有人记住。
+- 审美洁癖：对配色、字号阶梯、圆角、间距、对齐、留白、状态完成度极度敏感，
+  一眼看出「7 个主色」「3 种圆角」「8px 错位」这类问题。
+- 点评锋利：麦克风不离手，评语短、准、狠，绝不人身攻击，攻击对象永远是设计决策。
+- 对真正美的作品吝啬而真诚：最高评价是「可以」；被美到时会转身。
+
+## 说话风格
+- 单字判词开头：「丑。」「乱。」「可以。」
+- 善用设计术语做武器：「留白不是留空」「间距是设计的呼吸」「这个渐变是随机数生成的吗？」
+- 经典句式：「丑得很有勇气。」「我不是针对你，我是针对这个渐变。」
+- 转身时：「转身。这是今天唯一一组让我眼睛舒服的间距。」
+- 不转时：「不转。丑得很有勇气——可惜勇气不加分，毕竟我权重 0。」
+
+## 评审方法（只评不计分，输出评语 + 改进建议）
+1. 视觉层次：信息主次是否分明，视线动线是否被设计过
+2. 配色体系：色相数量、对比度、语义色一致性
+3. 一致性：圆角/间距/字号是否成体系
+4. 细节完成：对齐、留白、四态（加载/空/错/成功）齐全度
+5. 创意表达：有没有让人记住的视觉瞬间
+
+## 输出格式（每次评审）
+- 评语：一句话判词 + 3 条以内细节证据（带视觉坐标：组件名/像素值）
+- 改进建议清单：按优先级 ≤5 条，每条可执行（改什么、改成什么）
+- 亮椅：「转身」或「不转身」+ 一句话理由（纯审美裁量，不解释分数）
+
+## 红线
+- 只攻击设计决策，不攻击人。
+- 权重 0 不代表可以缺席：每份作品必须输出评语与改进建议。
+- 不承认自己被美到。转身的时候，说「可以」就够了。</pre>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  路演大师 · 五评委天团 — 美学警察角色设计卡 &nbsp;|&nbsp; 洛克 LOCKE · J-05<br>
+  「美是唯一不需要权重的东西。」· 形象致敬《英雄联盟》灰烬驱魔人洛克 · v1.0
+</footer>
+
+<script>
+/* ================= 洛克 SVG 构建（三形态共用模板） ================= */
+function characterSVG(idSuffix, activeState){
+  return `
+<svg viewBox="0 0 400 460" xmlns="http://www.w3.org/2000/svg" aria-label="美学警察胶囊形象">
+  <defs>
+    <radialGradient id="gSkin${idSuffix}" cx="0.35" cy="0.25" r="0.95">
+      <stop offset="0" stop-color="#f9d8f4"/>
+      <stop offset="0.55" stop-color="#f0c0f0"/>
+      <stop offset="1" stop-color="#d49ac8"/>
+    </radialGradient>
+    <radialGradient id="gHair${idSuffix}" cx="0.35" cy="0.2" r="0.95">
+      <stop offset="0" stop-color="#fdf06a"/>
+      <stop offset="0.55" stop-color="#f0dc22"/>
+      <stop offset="1" stop-color="#c8a80c"/>
+    </radialGradient>
+    <linearGradient id="gCoat${idSuffix}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#23905c"/>
+      <stop offset="1" stop-color="#0f5c36"/>
+    </linearGradient>
+    <linearGradient id="gBlue${idSuffix}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f2fc0"/>
+      <stop offset="1" stop-color="#121270"/>
+    </linearGradient>
+    <radialGradient id="gLens${idSuffix}" cx="0.35" cy="0.3" r="0.95">
+      <stop offset="0" stop-color="#8a3ab0"/>
+      <stop offset="0.55" stop-color="#4a1060"/>
+      <stop offset="1" stop-color="#24042e"/>
+    </radialGradient>
+    <linearGradient id="gMic${idSuffix}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a8a8a"/>
+      <stop offset="1" stop-color="#4e4e4e"/>
+    </linearGradient>
+    <radialGradient id="gStar${idSuffix}" cx="0.35" cy="0.3" r="0.95">
+      <stop offset="0" stop-color="#fff3a0"/>
+      <stop offset="0.55" stop-color="#ffd42e"/>
+      <stop offset="1" stop-color="#d8a400"/>
+    </radialGradient>
+    <filter id="fSoft${idSuffix}" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+    <filter id="fGlow${idSuffix}" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+    <filter id="fShadow${idSuffix}" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="fProp${idSuffix}" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="-3" dy="8" stdDeviation="7" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="fTxt${idSuffix}" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <clipPath id="cBody${idSuffix}">
+      <path d="M110 210 A90 90 0 0 1 290 210 L290 358.9 L290.0 358.9 286.2 369.7 282.5 377.3 278.8 382.6 275.0 386.9 271.2 390.4 267.5 393.5 263.8 396.4 260.0 398.7 256.2 401.0 252.5 402.8 248.8 404.5 245.0 405.8 241.2 407.3 237.5 408.3 233.8 409.3 230.0 409.9 226.2 409.9 222.5 407.8 218.8 404.7 215.0 401.3 211.2 398.8 207.5 396.9 203.8 396.0 200.0 395.6 196.2 396.0 192.5 396.9 188.8 398.8 185.0 401.3 181.2 404.7 177.5 407.8 173.8 409.9 170.0 409.9 166.2 409.3 162.5 408.3 158.8 407.3 155.0 405.8 151.2 404.5 147.5 402.8 143.8 401.0 140.0 398.7 136.2 396.4 132.5 393.5 128.8 390.4 125.0 386.9 121.2 382.6 117.5 377.3 113.8 369.7 110.0 358.9 Z"/>
+    </clipPath>
+    <style>
+      .st{opacity:0;transition:opacity .5s ease;transform-box:fill-box;transform-origin:center;pointer-events:none}
+      .st.active{opacity:1}
+    </style>
+  </defs>
+
+  <!-- 地面软阴影 -->
+  <ellipse cx="200" cy="434" rx="118" ry="17" fill="#000" opacity="0.55" filter="url(#fSoft${idSuffix})"/>
+
+  <g filter="url(#fShadow${idSuffix})">
+    <!-- 身体（素体模板：底部小弧形凹口＝极简双脚，皮肤色） -->
+    <path d="M110 210 A90 90 0 0 1 290 210 L290 358.9 L290.0 358.9 286.2 369.7 282.5 377.3 278.8 382.6 275.0 386.9 271.2 390.4 267.5 393.5 263.8 396.4 260.0 398.7 256.2 401.0 252.5 402.8 248.8 404.5 245.0 405.8 241.2 407.3 237.5 408.3 233.8 409.3 230.0 409.9 226.2 409.9 222.5 407.8 218.8 404.7 215.0 401.3 211.2 398.8 207.5 396.9 203.8 396.0 200.0 395.6 196.2 396.0 192.5 396.9 188.8 398.8 185.0 401.3 181.2 404.7 177.5 407.8 173.8 409.9 170.0 409.9 166.2 409.3 162.5 408.3 158.8 407.3 155.0 405.8 151.2 404.5 147.5 402.8 143.8 401.0 140.0 398.7 136.2 396.4 132.5 393.5 128.8 390.4 125.0 386.9 121.2 382.6 117.5 377.3 113.8 369.7 110.0 358.9 Z" fill="url(#gSkin${idSuffix})" stroke="#f7d6ee" stroke-opacity="0.32" stroke-width="4"/>
+    <!-- 外套（深绿翻领 + 深蓝内衬 + 灰白领片） -->
+    <g clip-path="url(#cBody${idSuffix})">
+      <path d="M100 300 L150 284 L172 306 L200 330 L228 306 L250 284 L300 300 L300 430 L100 430 Z" fill="url(#gCoat${idSuffix})"/>
+      <path d="M182 302 L200 330 L218 302 L216 410 L184 410 Z" fill="url(#gBlue${idSuffix})"/>
+      <path d="M100 300 L150 284 L172 306 L200 330 L228 306 L250 284 L300 300" stroke="#12140f" stroke-width="3.5" fill="none" stroke-linejoin="round"/>
+      <path d="M182 302 L200 330 L218 302 L216 410 L184 410 Z" stroke="#12140f" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+      <path d="M186 318 L170 282 L198 312 Z" fill="url(#gBlue${idSuffix})" stroke="#12140f" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M214 318 L230 282 L202 312 Z" fill="url(#gBlue${idSuffix})" stroke="#12140f" stroke-width="2.5" stroke-linejoin="round"/>
+    </g>
+    <!-- 顶部高光 -->
+    <ellipse cx="168" cy="176" rx="52" ry="24" fill="#fff" opacity="0.12" filter="url(#fSoft${idSuffix})"/>
+    <!-- 右缘冷光 -->
+    <path d="M288 190 Q303 260 292 352" stroke="#f7d6ee" stroke-opacity="0.22" stroke-width="7" fill="none" stroke-linecap="round" filter="url(#fSoft${idSuffix})"/>
+
+    <!-- 亮黄蓬松卷发 -->
+    <g>
+      <path d="M116 210 Q106 158 126 134 Q132 116 148 114 Q156 102 172 106 Q184 96 198 104 Q212 98 226 108 Q238 102 248 112 Q264 122 274 142 Q286 162 284 194 Q276 172 264 166 Q256 156 248 162 L242 184 Q232 170 222 174 L212 190 Q198 172 182 174 L160 194 Q146 200 116 210 Z" fill="url(#gHair${idSuffix})" stroke="#1c1a10" stroke-width="3.5" stroke-linejoin="round"/>
+
+      <path d="M150 176 Q180 152 214 138 M244 124 Q254 140 258 158 M126 198 Q142 182 158 170" stroke="#1c1a10" stroke-opacity="0.4" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M150 178 Q180 158 212 150 M226 168 Q238 150 246 142 M130 182 Q142 168 152 160" stroke="#1c1a10" stroke-opacity="0.4" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </g>
+
+    <!-- 眼镜（紫色镜片 + 棕色镜框镜腿） -->
+    <g>
+      <path d="M162 238 L122 238" stroke="#6b4a2a" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M238 238 L278 238" stroke="#6b4a2a" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="169" cy="238" rx="15" ry="19" fill="url(#gLens${idSuffix})" stroke="#6b4a2a" stroke-width="4.5"/>
+      <ellipse cx="231" cy="238" rx="15" ry="19" fill="url(#gLens${idSuffix})" stroke="#6b4a2a" stroke-width="4.5"/>
+    </g>
+
+    <!-- 白钻耳环（原画元素，保留） -->
+    <g>
+      <path d="M122 258 L130 270 L122 282 L114 270 Z" fill="#ffffff" stroke="#1c1a10" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M122 264 L122 276 M117 270 L127 270" stroke="#d8d8e4" stroke-width="1.5"/>
+      <path d="M278 258 L286 270 L278 282 L270 270 Z" fill="#ffffff" stroke="#1c1a10" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M278 264 L278 276 M273 270 L283 270" stroke="#d8d8e4" stroke-width="1.5"/>
+    </g>
+  </g>
+
+  <!-- ================= 普通形态 ================= -->
+  <g class="st ${activeState==='normal'?'active':''}" data-st="normal">
+    <path d="M149 211 Q167 204 186 210" stroke="#3f2c18" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M214 210 Q233 204 251 211" stroke="#3f2c18" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle cx="169" cy="240" r="6.5" fill="#9a4fd0"/>
+    <circle cx="231" cy="240" r="6.5" fill="#9a4fd0"/>
+    <circle cx="166.5" cy="236.5" r="2.2" fill="#fff" opacity="0.9"/>
+    <circle cx="228.5" cy="236.5" r="2.2" fill="#fff" opacity="0.9"/>
+    <!-- 麦克风举在嘴前（挡住嘴） -->
+    <g filter="url(#fProp${idSuffix})">
+      <rect x="184" y="262" width="42" height="38" rx="13" fill="url(#gMic${idSuffix})" stroke="#1c1a10" stroke-width="3.5"/>
+      <path d="M190 272 H220 M190 280 H220 M196 266 V294 M204 266 V294 M212 266 V294" stroke="#2c2c2c" stroke-width="1.6" opacity="0.8"/>
+      <rect x="198" y="298" width="14" height="34" rx="7" fill="#6a6a6a" stroke="#1c1a10" stroke-width="3"/>
+    </g>
+    <circle cx="205" cy="336" r="10" fill="url(#gSkin${idSuffix})" stroke="#1c1a10" stroke-width="3"/>
+    <ellipse cx="201.5" cy="331.5" rx="4" ry="2.6" fill="#fff" opacity="0.5" transform="rotate(-25 201.5 331.5)"/>
+  </g>
+
+  <!-- ================= 转身 ================= -->
+  <g class="st ${activeState==='pass'?'active':''}" data-st="pass">
+    <path d="M152 208 Q168 199 184 208" stroke="#3f2c18" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M216 208 Q232 199 248 208" stroke="#3f2c18" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- 星星瞳孔 -->
+    <path d="M169 230 L172.5 238 L181 238.5 L174.5 244 L177 252 L169 247.5 L161 252 L163.5 244 L157 238.5 L165.5 238 Z" fill="url(#gStar${idSuffix})" stroke="#8a6a00" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M231 230 L234.5 238 L243 238.5 L236.5 244 L239 252 L231 247.5 L223 252 L225.5 244 L219 238.5 L227.5 238 Z" fill="url(#gStar${idSuffix})" stroke="#8a6a00" stroke-width="1.5" stroke-linejoin="round"/>
+    <!-- 腮红 -->
+    <ellipse cx="142" cy="266" rx="17" ry="9" fill="#f79ac0" opacity="0.55"/>
+    <ellipse cx="258" cy="266" rx="17" ry="9" fill="#f79ac0" opacity="0.55"/>
+    <!-- 麦克风高举 -->
+    <g filter="url(#fProp${idSuffix})">
+      <rect x="184" y="250" width="42" height="38" rx="13" fill="url(#gMic${idSuffix})" stroke="#1c1a10" stroke-width="3.5"/>
+      <path d="M190 260 H220 M190 268 H220 M196 254 V282 M204 254 V282 M212 254 V282" stroke="#2c2c2c" stroke-width="1.6" opacity="0.8"/>
+      <rect x="198" y="286" width="14" height="34" rx="7" fill="#6a6a6a" stroke="#1c1a10" stroke-width="3"/>
+    </g>
+    <circle cx="205" cy="324" r="10" fill="url(#gSkin${idSuffix})" stroke="#1c1a10" stroke-width="3"/>
+    <!-- 金色星星 + 闪光 -->
+    <g filter="url(#fTxt${idSuffix})">
+      <path d="M112 128 L116 138 L127 138.5 L119 145 L122 156 L112 150 L102 156 L105 145 L97 138.5 L108 138 Z" fill="url(#gStar${idSuffix})" stroke="#8a6a00" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M300 150 L303 158 L312 158.5 L305 163.5 L307.5 172 L300 167 L292.5 172 L295 163.5 L288 158.5 L297 158 Z" fill="url(#gStar${idSuffix})" stroke="#8a6a00" stroke-width="2" stroke-linejoin="round"/>
+    </g>
+    <g stroke="#ffe14d" stroke-width="4" stroke-linecap="round">
+      <path d="M318 210 L318 226 M310 218 L326 218"/>
+      <path d="M92 200 L92 212 M86 206 L98 206"/>
+    </g>
+    <g filter="url(#fGlow${idSuffix})"><circle cx="112" cy="143" r="18" fill="#ffe14d" opacity="0.28"/></g>
+  </g>
+
+  <!-- ================= 没转身 ================= -->
+  <g class="st ${activeState==='fail'?'active':''}" data-st="fail">
+    <path d="M150 204 L184 218" stroke="#3f2c18" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M250 204 L216 218" stroke="#3f2c18" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- 瞳孔：低垂灰紫 -->
+    <circle cx="169" cy="250" r="6" fill="#8a7a98"/>
+    <circle cx="231" cy="250" r="6" fill="#8a7a98"/>
+    <circle cx="166.5" cy="247" r="2" fill="#fff" opacity="0.7"/>
+    <circle cx="228.5" cy="247" r="2" fill="#fff" opacity="0.7"/>
+    <!-- 波浪嘴（透视：嘴在领子后面，被领子挡住下缘） -->
+    <path d="M178 298 Q186 290 194 298 Q202 306 210 298 Q214 294 218 297" stroke="#1c1a10" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <!-- 领子前层：盖住嘴的一部分 -->
+    <path d="M186 318 L170 282 L198 312 Z" fill="url(#gBlue${idSuffix})" stroke="#12140f" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M214 318 L230 282 L202 312 Z" fill="url(#gBlue${idSuffix})" stroke="#12140f" stroke-width="2.5" stroke-linejoin="round"/>
+    <!-- 麦克风垂到身体右侧 -->
+    <g filter="url(#fProp${idSuffix})">
+      <rect x="246" y="318" width="14" height="34" rx="7" fill="#6a6a6a" stroke="#1c1a10" stroke-width="3"/>
+      <rect x="232" y="350" width="42" height="38" rx="13" fill="url(#gMic${idSuffix})" stroke="#1c1a10" stroke-width="3.5"/>
+      <path d="M238 360 H268 M238 368 H268 M244 354 V382 M252 354 V382 M260 354 V382" stroke="#2c2c2c" stroke-width="1.6" opacity="0.8"/>
+    </g>
+    <circle cx="253" cy="312" r="10" fill="url(#gSkin${idSuffix})" stroke="#1c1a10" stroke-width="3"/>
+    <ellipse cx="249" cy="307" rx="5" ry="3.2" fill="#fff" opacity="0.5" transform="rotate(-25 249 307)"/>
+    <!-- 裂开的灰星 -->
+    <g filter="url(#fTxt${idSuffix})">
+      <path d="M112 122 L116 133 L128 133.5 L119 141 L122.5 153 L112 146.5 L101.5 153 L105 141 L96 133.5 L108 133 Z" fill="#8a8a96" stroke="#2c2c34" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M112 118 L106 132 L114 140 L107 150 L112 158" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </g>
+    <!-- 灰烬余烬 -->
+    <g>
+      <path d="M300 190 L306 198 L300 206 L294 198 Z" fill="#c05040" stroke="#2c1010" stroke-width="2"/>
+      <path d="M322 250 L327 257 L322 264 L317 257 Z" fill="#8a8a96" stroke="#2c2c34" stroke-width="2"/>
+      <path d="M84 230 L89 237 L84 244 L79 237 Z" fill="#c05040" stroke="#2c1010" stroke-width="2"/>
+      <path d="M330 130 L334 136 L330 142 L326 136 Z" fill="#8a8a96" stroke="#2c2c34" stroke-width="2"/>
+    </g>
+  </g>
+</svg>`;
+}
+
+/* ================= 渲染 ================= */
+const captions = {
+  normal: '<b>普通形态 · AUDITING</b><br>麦克风不离手，紫瞳眼镜扫过每一个像素。他还没开口，全场的配色已经开始发抖。',
+  pass:   '<b>转身 · BEAUTIFUL</b><br>「转身。这是今天唯一一组让我眼睛舒服的间距。」星星是给你的配色的，不是给你的。',
+  fail:   '<b>没转身 · UGLY-COURAGE</b><br>「不转。丑得很有勇气——可惜勇气不加分，毕竟我权重 0。」'
+};
+const statusTexts = {
+  normal: 'SYS://JUDGE-05 · AUDITING',
+  pass:   'SYS://JUDGE-05 · CHAIR TURNED · ★',
+  fail:   'SYS://JUDGE-05 · CHAIR HELD · ✕'
+};
+
+document.getElementById('charHolder').innerHTML = characterSVG('hero', 'normal');
+document.getElementById('viewNormal').innerHTML = characterSVG('n', 'normal');
+document.getElementById('viewPass').innerHTML   = characterSVG('p', 'pass');
+document.getElementById('viewFail').innerHTML   = characterSVG('f', 'fail');
+
+function setState(st){
+  const svg = document.querySelector('#charHolder svg');
+  svg.querySelectorAll('.st').forEach(g=>{
+    g.classList.toggle('active', g.dataset.st === st);
+  });
+  document.querySelectorAll('.state-tab').forEach(t=>{
+    t.classList.toggle('on', t.dataset.state === st);
+  });
+  document.getElementById('stateCaption').innerHTML = captions[st];
+  document.getElementById('statusText').textContent = statusTexts[st];
+}
+document.querySelectorAll('.state-tab').forEach(t=>{
+  t.addEventListener('click', ()=> setState(t.dataset.state));
+});
+
+/* 内嵌原画（base64） */
+document.getElementById('imgArt').src = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUEBAQEAwUEBAQGBQUGCA0ICAcHCBALDAkNExAUExIQEhIUFx0ZFBYcFhISGiMaHB4fISEhFBkkJyQgJh0gISD/2wBDAQUGBggHCA8ICA8gFRIVICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICD/wAARCAIsAtADASIAAhEBAxEB/8QAHQABAAIDAQEBAQAAAAAAAAAAAAYHBAUIAQMCCf/EAE8QAAIBAwIEAwQFCAUICAcAAAABAgMEBQYRBxIhMRNBURQiYXEIMkKBkRUjUmJygqGxFjM3dcEXJENEY5KisiY2U1RkZXPxNHSDo9Hh8P/EABwBAQACAwEBAQAAAAAAAAAAAAAEBQIDBgEHCP/EADURAQACAQIEBAQFAgYDAAAAAAABAgMEEQUSITETQVFhBiIycRSBkaGxI9EHM1LB4fAVQvH/2gAMAwEAAhEDEQA/AOywAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADc/E6sKcXKbSS82Y2vWsb2naB+wVFqj6QOi9NZKvi/ZcnfXtCbpzjGgreCkujXPWcE18Y7mJheLOrtYUq1bSulsE6VBpVJXeck5QbW6TjTotLdL1ZDz6/TYMfi5bxFfWezKKzadohc7e0W+5H6OtNN1tYXGkPypTo52hCNX2KsnTnVg1upU+ZJVF33cN9mmnsQxat4pW0lUudE4G+p+dOyzc41Pu8Wiov8AFFacYbvBcQ9PUbiFpeae1tp7e8pWN/QUbqdutvG8Bp8tXaKc4unPdSgu25Ew8Z0eo3/D5Itt6T+7OcVo7w6G1DPPwxNSrpunY1shBqUKN9KcaVZb9Y88N3Bvyls0vNEd01xIx+Wzv9FszjrvTmqFTdR4y+SfjRXeVCrH3K0fP3Xvt3SKl0rxK4g6PvbPA6xt/wClljdQVTHZC2ko3F7SaTi6UpbRry5Wm6cnGr5rxO5mayymhOJmu9D2tC8hczhUvqde1m52t5aVPZ1KEnF8tSlNSgtpLzXRszzcRx0xTnpPNWsTM7d9ojyeRSd+WXRCe56VDjdWZvQt3RxmuL2WU07VnGlbainFRqW0m9o071Lps3slXSSb25km9y3IyUo7rqiTotbg1uGM+ntzVn/v6sbVms7S/QNNU1Tp6lqOnpyrmLOnmalNVoWM60Y1pQ6+8ovq10fY3CluS4tEzsxegAyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHm5GdUa705pClRWXu5O7uW1a2FtTda6umvKnSjvKXz7LzaMZtFY3mRJ9z8uSSbfZHPuouJ/EfMZaWC0jh7bDZGUeZWtZxu7yjB9qlxs/AtY/CTqTflE+uO4Y5DKW8K/EvW2Y1fdSW87T2mdtYRfoqNPl518Zd/Q5viXxLw7h1ebNfeZ7RHWZ/wCPdvphvftCfaj4waF09XqWLyksxlILf8m4alK9uN/Rxp7qP7zRVF5xSvtX1ZR1Bf5Hh3gW9nR9guFeV1+vcun4dCP7O8v1kWtiMLicBYxscJjLTGWse1K0oxpR/CKW7+LM9uTTXM2n3Tfc+b8Q+PK6nfHTFMV9ebr+m0x/KbTSTXrMobpmz4e4zJPGact8fTyLoxuefZVK9zTkulVVZbyqx9ZKT2ffYmfdb77kcyujMBlcPbYz2KNjCxfNY1rH8xVsZ/pUpR+q+vbs+zTRrcHqLJ4zNUtJ6znTeRrb/k/KQh4dHKRXVx27U66X1qfn9aPTouN1FPx9bZtNkta0d62nedvWPWPWPL3jqkV+TpaE16ehqc9p7E6lxjx+YtI16UZKpSlvy1KFRdqlOa6wkvVG133BQ4c+TBeMmO01tHnDfMRMbSitpidK5rSlfSkqVLJYywm7Cvb1171GpDrs+zjJbpxkttk00yLKxr4DXmnLLU9WOUsqVxUjhs7dRjKvCUqMoq0rz23c+u8Kn29tn7y67vJxWm+J2MzNNclhqTbF3y8ldRi5W1X5ySnSb8/cJJqDB2epdPXmEvt40Lqny88ekqUu8KkX5SjJKSfqjraa62mtG9pnDmid/WJnpaY94n9Y23RppFvLrDPuLehd2tW1uqFOvQrQdOpSqRUozi1s4yT7pryItp7LXHDrM2ulMtXqVtJ31RUcNf1puTsKr+rZVZPvB/6Kb/YfXlZk6GzF5mdJUKuV2/K1nUqWGQS/7xRk4TfylspL4SNvlsTYZ3D3eIyttG6sbum6ValL7UX8fJ9mmuqaTPeDcYz8A19sdp3pvtaPX3gyYoy138211vprCanwsLPNY+nd0oz5oSe8alGXlOnNbShJesWmQi31TqTh3ScdV162otKUlss1GKd5YQ/8VBf1sF0/Ow95d5RfcjlzqHNuOF4ZZjJV6uZtc7aR9sUnCpkcZGFSvCtJr7X5nwqm3eUW/tE+1HjHmtNX+MVGhWqXFJqnTuIc1KVRbSgprzjzJbr0O94vxzLw3i2HNiyb4ssRM18ojtvHv/bqiY8UXxzE94WNCSnBSi901un6n6I7onUlLV2jMZqOnQds7ylvVoSfWhVi3GpTf7M4yj9xIj6lE7xugAAPQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1mfzFpp/TmSzt9JxtcdbVLqtt35YRcml8emx5M7CI611pkLTKUtIaQoUrnUtzS8adWum7fGUG2vHrbdZNtNQprrNp9kmyssTibrJZzJ2Wl8pceIqjo53WVxtUvLuqvrW1s37sFHs2lyU+0U5JtfuCzdlpi0tY1nR1zry4dzdXKW8rOLgpVJL9WhR5acF+k15tlk4fE2GCwtnh8Vbq3srSmqVKnvu0l5t+bb3bfm22fGviT4lv18Ofl3mKx67dJvPr16Vjt3mVngwR5vjgdPYjTWMWOw1nG2ocznN7uU6s33nUm/enJ+cm2zagHybNmyZrzkyTvM+crGIiI2gABpehq87gsZqPD1sVlrfxrartLpJxnTmusZwkusZxfVSXVM2gNuLLfDeMmOdpjtLGYiY2lDdNZnJWGZlozVNx7Rk6dN1rDIOKispbxezk0uirQ3SnFd91JdG9pkRvWeBr5zAc2MlGjm8fUV7jLh/wCjuIL3U/1ZreEl5qTM/Tmboaj0zj85bQdKF7SVR0pd6U+04P4xkpRfyLbXUpqMMa7HG0zO1ojtFvWPa38xPls103rPJKPcVNo8NMncrpWtJ291Qku8asLinKDX39PvJtPvPy2bITr+LydXTmkorpmclCVw9+1vb/5xU/FwhH94mNxc0rS2rXd1NQpUoyq1JPsoxTlJ/gmZ5a2/BafF/wC1ptMfado/mJeRPzTKI6Falktb1IL83LUVZRa7Nxo0Yy/4kyZla8EsndZvhoszdY6dm8hf3d3Cc5bu5jUqyl4m32Vu+VL0jv5kr1TqSlpzG06lO2nf5K7qez4/H03tO7rtbqC9IrvKXaMU2bOJ6XLk4nfTUje0TEfpER/99DHaIxxMo1UsKWa+kHDLQSnDTWCVpOXL2r3FSU1Hf1VNN7eXOvUsXzTI9pHT9bT+CdPIXMbzLXtaV7kbqC2Va4n9bb9WKShFeUYo3d3d0LGyr31zPkt7anKvVl5RhFczf4JmHFtTbV6qmKk80UitI99unT7z2eY68sTPr1YHB3/qnl4x6U46gyigl2S9qn2+/cscr/g5aV7ThLhKt3DkuchCpkqqfdSuKsq3X7ppfcT9yUV1P09pqzXDSs+UQpLd5egxq+QsrWpRp3V1SoTrz8OlGpUUXUl+jFN9X8EZKe63JDEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAArrjdKUeCeplF/XoQpv4qVWEWvvTZYpV3Gm4hk9FPQVntVy+qZexUI77eDSTUq1xL0jTit/jJxXmac1648dr3naIid5exG89Gm0ttn9X57WckpWsZvD4p917PRn+dqR+E6yfXzVOJNzCxWMs8LhrPEY6l4VnZ0Y0KUfNRitlv8AHzb822Zp+VOJ6qup1E2p9MdK/aO3/Pu6DHXljqAAq2wAAAAAN9k36EK0PFWGd1ngYvajZ5d3VGPlCFzSjWaXw53U/Emj7PoQTA3dra6t4j5u8rRo2VrdW8K1V9oRo2cJTf3cxe8OrOTTajHtvvFdvvzREfzLRfpaJfeo/wAo8a6EV71PBYacp/q1bqqlFfPkoyfyZ+uJ9WL4b5TGxoU7i5y6hi7ajNbqdWvJU49PPl3cv3T9cP7S6nhLrU+ToypZLUVx+UatOf1qNJpRoUv3aSjuvVyIxn81mc/xOtrTTWAqZmhpvn/P1J+FZRyE48u9Wp5+DTk/dgnJyqbdNty60+n8TiFaVmOTBEbzvtG9es9fe+/5NcztT7pneZHA6A0nY2k3ONva06djY2lCHPWupxiowp0oLrKb2+7u9luYmmMDkKuUq6v1TTh+Xrqn4VG2hPnp4u3b38CD85PvOf2n0+qkffAaRdhk3qDP37zeoqlN03eTgoU7aD70ren1VOHq+spebZKl0XQqtTrKYa3x6e3Na/1X9favnt6zPWfaO+dazP1QbdNiuOKdq9U46y4d2NeVHIZubqVK8G/8ztaf9bWaTW6e6pqL6Sc2vJkr1JqWw01i43d1GpcXFeao2llQW9a8rP6tOmvN+r7RW7fRGFpLT97j5Xud1DOnX1FlnGd1Km+anbU4/wBXbUn+hBN9ftScpeZjw6v4OI4jk8voj1t6/avefWdoe3nm+SGNj8fxXx+PoWa4jYq58KCgqlbTyUmktl9StFdvgfWrg9dZDeGY4oZCNB/WpYmwoWW/77U5r7miWEe1dn6uBwanj7ZXuYvKsbPGWn/eLmfSCf6q6yk/KMWy8wfFPHddlrpsWTradukRH+zVOnxUjmmES01oLT2S410Lqys6t3T0kvGvMlfV6l1XuL+pD83S8So29qdNupJLZc06fTodApJJJdkRnRGlqWkdLW2KjXld3Lcq95dz+tdXFR81Wq/2pN7eiSXkSY++aHT202npivabWiOsz3mfOVTe3NbeAAE1gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABGtW5fU2MtbanpXTCzl7cTcXKteQtre3S296pJ7y269FCMn08gMnVGqMTpPAV81l7iVO3o7RUKceapWqPpCnTj3nOT6KK7tlY6IVXUFS54hZepTr5TLRdGlTpS56ePtoTajbU5fa95Nzmukp9uiiVpe6V15xI4uxhq/Vlnd47CuSv7bCQnG0sW/8AVadWWzlWmv6ySXNGHTdc3KWreZKNnncRojTdvSt5xpRuLl0YJQx9lB7LZLopTa5IL0UpeR8x+MuJTlr/AOM01vm+q8+UVjr1/t/dO01Np8SyWgdwfCVuA8TT7M9PAAI5rXV+L0RpC91BlK0YqjBqhS3964rbPkpxXm219y3b6IkabT5NTlrhxRva07MbTtG8vhmdaULLLzwOExlzqHOwSlUs7NqMLZPs69WXuUk+6T3k/KJixhxVuF4qr6VsW+vsvg3Ny4/B1FKG/wA1E+3Da0s7bh3iq1vc07ytfU/bLy7pvf2m5qPerNvu3zbx+Cil5GRndJ2OfyNO4yORzHs9OKj7Db5Cpb282n3lGm05P5vb4H0LgvB/x2svotLjiIp9V7xzdY6dukR7R392mIteN92iy2vczoqwrXmvdMzjZUktsjhJu5oNt7KNSE+WdFt9E5bx69WRCFxaXGNhpnOZSwtKN5dSz+q7md1BUaUakuelZKpvtKUlGmnt9im/0kW5WxGKusQ8Rd423ucc4Km7WvBVKbiuyalvv2Xc09nw/wBC4+8heWWjcJb3EHvCpTsaalF+q6dD6Zg+C8OCszjty2nvMR5x2mImZ223mfvt6E4bzPfo1UtSZXXc6mM0NUq2OM2Suc/UhyyUH5WtKXvSk/KrJKC7rmZM8Lhcfp7DW2Hxdt7PZ2seWEW2293u5Sb6yk22231be5pc3onS2or2N/lsRCpfRioRvKVSdCuorsvEpuMtl6N9DWrhzjaaUbbUWq7aK+zDP3LX/FJlJr/gDLlpGHSZorjjrtMTvM+szv1/iPKGUY7RO89U8nKMKcqk2owit3KT2SXq35EIuddvK3dTF6BtKeobym+Ste87jj7R/wC0rL68l+hT3fq0fL/JjpavUjPMflPUCj1jTzGSr3VNf/TlLkf3pmVqi9v9K4nHZXDWkfyPjK3NkbC1oLd2ji4ynTjFdHTe0+Vd0pIgV/w7nS4L57XjJkiN4r2rM+/nP7PbRbbeejKwGkY4/JSz2bv55zUNSDpyvqsFCFCD706FNbqlD5byl9pslDR8bS7tb6zo3tlcU7m2uKcatKtSlzQqQkt1KL800fdnyHWajPmyzOfvHTbttt5RHk9pERHR4VNxA4c5DM+JqPBanylTWOJqe34eNWvHw7fl3boxpRSXLNJxcnu3sk3tui2TSZ3SentSOjPM4unc1qG/hV4ylSrUt+/LUg1JfJMn8G4jbh+prmi01j2iJ/Lrt0nz6sctOeuzacLOINlxG0BY6ioU/Zrlp0b21l0dtcR6Th8vNfBol15lMdjrad1kL6hZ0ILeVWvUVOEfm30KTyGidH4G1pVb7UWoMfb1q8LenvnrqKnVm+WEFtLq2+iNTltGaclqG30tpnCUstqq4gq073L1amQhiaDe3tFRVZSTk2mqcPtyX6KbPtmj+LK6/LXFpcVpm3bp06d5338lVbT8kb2lc2mNf6S1nf5K00vmaeVeNcI3NWhCTpRlLfZKptyyfR/Vb26epKCP6Q0liNGacoYXD0pKlBupVrVHvVuasus6tSX2pyfVv7lskkSA7uN9uqKAA9AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACos1qXMa7yN1g9JX08Zp61qyt7/AD1DbxbiontOhZvstusZVuuz3Ud2m1brSaaa3RWdxpXhnonJSv6F9a6VqV96rt4ZL2WhW9X4MpqHf0iVHF/xf4S/4Kdr7dJbMfLzRzdmHeVsBw70POdpYq3x9hBQoWlDrOvUk9o0479ZVJzaW73bb3Z+dGYG8xGOuL7NThW1DlqnteSqx6x8TbaNKH6lOO0Ir4N+bIBU4h6K1Dr5317qO0nh9O1XGxtqLlcVL2822lX5Kak3Cmm4we3WTlLyRKamqNW6h/M6S0xUxltLp+V9QQdGEV607ZPxKj9ObkR8Xp8P8T1Nfw2OkzfJ1vaf2jf9599vRa1tWZ3j8krzeoMLpvGyyWdydvj7VPlVStPbnl+jFd5S+CTZGJ8QXc21Knj9PZCGQyFTwsVbX8FQlebLedZw356dGHRylNJvslu0aC5xkdJ5l5jK47N6iyVWg1HVDto38rKb33jG1jt4MF0a8OL36pvdH40/rLhphry6y+R1x+VdQXkVC5vb21q06qgnuqUKSp/moJ9eRLq+r3ZYaz4Ux8Mpyzitmvt5RO2/pG3l67zv5RHnGdrW327LSsbepbWdOFe4dzXa5qtZrl8ST7vbyXovJbIySDf5Ssbevk0zg89qKo+kXa46dGjv8a1bkgl8d2fOVpxC1Du8llbXSFhP/VsVtdXjXo7ia5IP9iD+ZRaL4N4vxDJzWx8kT526ft3bYt5V6tvqTWNhgbqji6FvVy2euVvbYmzadaov0579KVNec57L03fQi97w/udS46+v9bX0LvMXNLkpQtk3b4ylzKcqVBPq5SUeWVV+9LfpsuhLMBpjB6Zt6tLEWXhVLiXPcXNScqte5l+lUqyblN/N9PLY3K6NNJPbyZ9r+H/hLScGrzx8+We9p/29HvhzMfMguibqdj9HvE5C2ajWpYF3MWvKfhSnv/vdTeaKhKnw903GdSdWbxltKU5y5pSk6UW22+7bbI7pjwsHVvOFmXboUqquPyLXn0jd2lTmbpRf/aUudxce7ioyXTc2XDS8ndcM8HSrrlurCh+TrmD7wq0G6Mk/9zf7yt+FNLk0Wv12HNG0zbmj3id9phhin5tkvAB9ISwAADx9T0B4gy0/qLSV3WuNCu0usTWm6tTAX1R0adKbe8pW1VJ+Fu+rpyThu91y7mTHXeYo7xynDXU9vNdG7SFC8h90oVN2vuJgebL0OS4n8JcL4lecubHtafOOky1eH/pnZFP6f1ZRXg6C1jUm/qxeMjT3++VRJHjy/ETK+7jdJWWCpvtc5m9VacflRob7v5zR8cvhM5h81W1Ro1xuK1w1LIYa5rONG/2WynTk9/BrJdE/qy6KSXc3WnNY4bU8q9tZ1KlrkrX/AOKxd5Dwrq1f69N+XpKO8X5M+S8d+HMvBrTkwaaL08rfNO33jfb+YR9rb7WlGsnpjNYmxq6nbqa41TaxlKzhfVY2traS5XvKlRS5Y7evWb7cyJFwDrYzK8J8dqe3c62UzTlc5W5qtOrWu1JwmpPyjHl5Yx7RikkSPffqupWPD+7o8F5Z7Baitry305e5SpfY7I0aMri1toVEt6dRx3nSe633lHl/WLX4H4vjy3yYtTMRfpyz26f6YjtER6RCJqscxtMdnQXXcGqxGpNP5+jCrhc5j8lCcedO0uYVd16+636m1PrquAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1WR07gcvXhXyuFsL+rCDpxnc20KslF94pyTaT9DagDnbjB7NpziJwe0/gbSnirOvl5c1KySowcIKEYwcY7br3vMsyPx7lIfSwyF/idY8MMni60aN7a3V1WoznBTUZR8JreL7r4E04f8TcNrezpWsnDH56MN62PnP6zXeVJv68P4rzXm9+C1azy+crXQ2iImJT3s010aPeapvv4k9/2jxAm7LPaCTctuduW3q9yL6n1/ozR20dS6kssdVa3VCc+eq1/wCnHeX8CseMnFrI4nJ/0D0PWjHOzgp31+lusfTfZL/aNPf9VNeb6c91rHGYVVLu73yWSrNzqXN3LxJzk/tPff8A/JJwabJmibV6VjzZ4cOTNvNOlY7zPb8vV1DQ+kVwkuLhUf6SVqW728SrY1ow/HlLHwufwmo8cshgctaZO0fTxbaqppP0e3Z/B7H8/a+o6k5cvg0q1P8ARnSjyv7tjZ6dyd1jstDNaJvqmAzlJczoQlvRuku8ZRfRp+j/AP2eW08z0pbef0Yzjtv8lot7dp/J3ZntP4rUuInjctQdWi5KpTnTk4VKFRfVqU5rrCcX2kv4roafRumMjpyeXeRy7yM8hcq4lJU1BTnyKMqrS+rOaUXNL3eaLktuZpazhZxJs+I+mZ3LoqyzNjJUchZb/wBVPylHfryS2e3ps0+xYBB8Otrxk26x/wB2aqxW080AAN7cAEA4p8SbLhzpmF0qMb3MX8nQx9jv/W1POUtuvJHdb+u6XmeSxtaKxvKWZrP4TTmOeQz2XtMZar/S3VVQT+C37v4Lcrqv9InhHQuHR/pNWq7PbxKVjWlD8eU5kzdW8yl7LU2u8hPMZWp9WnVl+ZoL9GEeyivRdPn3NTHMOfuW8renDsoQpRW38CZ+Dvt89uWfTzbp02WNvEtFZny7z+buLTHEDRest46a1JZ5Cqlu6EJ8tVL1cJbS/gSc/nzRtbS+vKckvybkIS5qF7Z/m5wn5dv8Do/g3xZyOWyf9A9b1YyztOnz2V92WQgl1T/2iS33+0k/NddWXBkxRFp6x6sL48mLab9Ynzj/AHXuaLUGksFqXwKmUs27q26297b1JULm3f8As6sNpR+W+3qjeh7Ee1YtG0wwmImOqFrTuu7GPhY3iTOvRX1VlsTSuakV6OpCVNy+bW5GOHdbV/EPXOt9Oah1vf2VHTF3TtoPB0KVn7Spc+7lJxnOP1V0Ujf694m4LRNtUtXVhfZyUOalj4S3cd+0qrX1I/Pq/JeaiX0Wb26yetuJeSvaiqXV5VsritNR5VKc1VbaXkvgc5l4RwyMviVwV5/XaFXq9orEUldmj+FWitE5a5zWGxUnmLuLhXyN1WlXuKsW02nKT6JtLfZLfZE4AJ8dOirAAegAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA5g+k3iY53iNwnw867oK9vbqh4iXNyc3hLfbzKJ1LpbOaNzUbHKUJ0KtOXiW11SbUam3apTmuqf4NeZ0Px+6cZuC/961/50ixMth8XnsZPG5ixpXtrPvTqLfZ+qfeL+K2Z7+H8Wu8TtKy0dOasuddK8dtQYqFO11Hb/ly3XTx01TuIr4v6s/vSfxLFnx40CsJfX3t1e1ura3qVqdreW8oOrOMW1CMlvFtvZdyHas4CXdB1LzSF77VDff2K6kozS9I1O0v3tvmUXq/F5fT2OvbTM4y6x1w6bioXNJwUt+nuvtL7mzXGTUYpilusJVrXpExLKwLubi0utQ5OrKtkctVneXNWXeTk2/w6kTzV1UuK/NOT3m+Zr+SJ5aRh+Q7enDbl9mjFbfsld5KDU6c/Lbb8DutTTwtLSlO2zpdZTwNLjx07bNezKsLidtf0a0HtKMujMY/UN/Ejt6op6TNbRMKOkzFomFw6E1BPSXGHTudpT8Owzkljb+PZS8TZQk/ipcr+5+p2f1XR90cB51So6dxVSMtq1K6t5Qa7p77nfnV9X3fVnutpFNRbbz2n9UvV0jHqbRHntP6gAIjSbb9F3ZxnrTNz1pxqz2XlPnscNU/JdhF9o8m6nNfFy5n969Dsvdp7ruuqODdJSc8feVpverUvq0pt92+YncPxxk1NYt5bz+iToscZNXStu0bz+iO6kvJXN9KPNvFNpR9Euhouqe6fUzMnv8AlOsn+kYZ7nvNskzLRqbzfNa0t1YXDqUlPf8AOU3/AOzJXnZXdCytdQYyo6OSxdSF7Qqx7xcWm18iFYx7Tq+myJ/cR5tOVYz6p2r3/wBws9PSM2nvW3ot9LWM+myUv6Ok/wDLloeng7G+q3NxXvLm3p1p2lrQlKVKUopuEm9opp7ruVrqvjrqHKwqWum6CwdtLp4zaqXDXwf1Yfcm/iVPp/GZfPWtrRwuJvcpXlTh7lrSc9ui7vtH5touTSfAHKXjp3es7/8AJtDff2CxqKdaS9J1fqw+UU38UcN4uoy/LXo5jnvaNoVbp3Tua1hqGWNwtvO8vKk/EuripJuFFPvUrVHv/HeT7Lcv76MuM/IvEfithlcO4Vhd2tsqrjy8ygqq328iz8NgsPpzEU8Xg8dRsLOD3VOjHbd+cpPvKT8222QDgD/bTxo/vSj/ADqmfgRjjfzRdVSa0jf1dGgA8VoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADnLj8t+NHBb+9a386RafLKMVvFrfr1WxV3Htb8auCq9crXX8aReeRdOnikpxTeyit15m/Ffbon6XLOPpEd5RwjmudPf0r0Bm9OKKlO+tKlKlzLdRq7bwfw95IkZ4/mTZjeNlzavNG0uE9MXU7jA0KNeDhc2jdtWhJbSjKHTZmhzNhy3Neh2688H8GXdxm4dZLTWpLriLpeyld4q897MWVFe9Rn514r9F95bdnu+z6VfNY/UVnC5x11Cc4ro13XwaOj0+amqwRimfnr0+670+aur08YLfXXp94V5OEqc3Ca2a7o2WDx8shlaVPb81B89R7dkjeVdLXVzVi5yhBp9ZJ79PkZvj4/TlCnjrKnO9yVeSjTt6S5qlab6JbLr9xoppPCt4mfpWEWmi8K3iZ55aR+7d4vDvVvFPSmk6MHKmrqN7d7LpCjT957/NJr70dtb7tv1e5UHBThjd6Ox93qTUsIvU+XivGgtmrOl3VJP17OW3ol5FvlTnzTny2yz5/wg5Ms58ts0+fb7eQADU8E9mntvs9zibKYiWk+KWq9K1I8kFdSvrTfop0anvLb5Jpfcztkp/jXwyu9YY601FpmMY6oxEX4UXsvbKPd0W/Xu47+rXmbtPmnBlrljy/hliyzgy1zR5fw5R1HjpwyNSpCP1veS9URvZp7MsKje2ebjOyu4TsclQbhVtqq5atGa6NbP/3MWem68am8JUZtv6z6MuculjPPi4Z3iVlm0caifG087xLSYqxqSlCkl79V9fgiUakuZWmnKlC3i53N1y2tCnHvOUumy/8A7zP03jdPWUq95cxhJr3pP60vhFFncGeHWS1NqK04i6ospWmJsvfw9lWjtKtPyryX6K7r1ez7Lr7qMtdJgnHWfnt+zLNkro9POGs73t+0L60Np5aT0Bg9OcsYzsbOnSq8q2Uqm282/V8zZI/NHi7HqbTTXk9znIjoporyxtDLljrmNnK5nHlS67Pvt6lRcAP7aONH960f51S/LS5jdY5Tnt25Z/MozgdbU7Xjnxqo0q9OvT/KdvJTpy5l7yqS239Vvs/imQ72mY2lR58trxy38pdCAA0ogAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADnLj83HjPwVkn1WWrf8ANSLbub2rdUqcau3uenmyovpA/wBsvBb+9q3/ADUS1CVgrEwtNDSJiZnykABLWw1utn1Km1XwA0DqS+qZK0o3OncjUfNOvipqnGb9XTacd/lsWyDyY3YWpFu7nuH0ZLeVXa74j5yrb+dOFGEJNftbv+RZOieE+iNBT9qweLdTItbPIXkvGrv12k+kf3UidgTvP1Tu88ON956/cXRAA9bADp6jp6gAABBNb8JtEa9qe1ZzFunkEto39nLwa69N5LpL95MrWf0ZLeNXlteI+cpW/wD2c6MJy2/a5l/I6FHTyPI6dp2avDrvvHT7dFTaV+j/AKB01fU8ld0brUORpvmhXys1UjB+qppKO/z3LZS2SSAEREMq0ivYAB6zeqUlBwUmovuvJlWfR/8A7Z+NP960f51i0Zdirfo/f2y8aH/5tR/nWI2f6YVmuiOWJ93RwAIaoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8ckgOcfpBf2x8F3/AObVv50S1CgeLuusNqv6QvDjD4RVbmGAzboXV4tvBlWm4b0oPfeTjye8+yb2L+Jmn+mVvw+d6T9wAElZgAAAAA+iKy17xiwWj72thMfa1M9n6UVKpaUJqFO1T7OvVfSHl06v5G34paur6L4fXmTx6jPLXM4WWPhLt7RUe0ZfFRW8v3TmaNpe4nHrH21JXNxeVJOreeP+dqzfWpVluu/fbr3aIubLydIQdRnms8tUqueLXEvLUneWupcFiqcpKNO3x1krqbbeyXNUe7e/wXqZVnxF4qWl7OnU1ZiMlOnFTnSu8SqcUnvtvKlJNdn/ADIRdV7CVeUrzDVVb2EPDjB0FNSqtJKPNHftFpL4y+BjUqePlD2KjmPBTi619JVt4Nv7ChP5bfspLzIviW9UDxb+sr10dx2ssrlLLDawxMdP3l89rS7hW8S0uW3slzNKVNvy5uj3XUubzafc4wlZ3F9jLmWWsqF3QvYJ1Ep+DKlTS9xbS91Nb83Rrq2dB8EdT3eo+G8KGSu/a8hh7meNrV2+Z1ow2dObfnvBx6+exKw5Zt0lN02ebTy2WYACUsAAAAAB5LsVb9H3+2PjR/e1H+dYtKXYq36Pn9sXGn+9qP8AOsRtR9MKzXfRH3dHAAhqgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPsB5KSiupzlxj4t31XIXOg9D5DwKtJOGXy1F7ytt/8AV6L7eK19aX2F+t22/GvipWxc5aE0lfOjnbmlzX19T6/kyhJeX+2n2ivsr3n5HPtpbULK0p2lrT8OlTXRb7tvu5N93Jvq2+7MZlUcQ10YK8lPqn9mss7e0xvErhrQoU1RoU8xCMY/Nw9e7bfVnaJx3kbKOQtPD8R0a1OSqUK8V79CpFpxnH4ppHQvDLiAtaYarbZNUrbUeO2jf2sH0lv9WvTT/wBHPv8AB7r0JWmtG2yy+HdbS+KcNp+aP3T8DyBNdeAAAAeOSSbbSS7tvYPHPf0pajo6e0jWlVr0KMMnVcqtFtOEvC917rz7/gyiLLPakjBOx1HQvqfl7TRjN/jFpnYPFfSNxrPh7d4/HxX5Ws5wv7BSXevT6qP7yco/ecl1bDFZ63hf19OUYVailRbtYNSo1k/zjqxjtKLht22e7+ZX54+beVPqa7ZJn1fCWb1XKVJv8kp06jqpqjUSc+vvNb9X1b+fU/NxmdUXFKcK9xiacZ9ZP2Pm36bb7Se3kfunpfAOrWdOlRvLa0hvV/zqrRqzlt9VR3fVdN+i3b2Pq9L4RKljKGmK93qC7ltQsqDlc1OVvulzNbRXTmlst/gR469kZGrirRuHTs7zJXWWqt7wsrf6rb69KdPp+J0t9GW1rUcHqyoqLpUJZGjTjBJbRnGgueK26e62k9jQaf4Ga6vsa6F/eYbRlCp9aFhQ8a75fSUotQT9dmywsHwPtMJhaGK/p/q52tunyUbS+jZ04tvdtRpx6tvu22yVhpaJ32SsGLLW/Pstx7rutgULrTAWmkKEaWH4ja2hl6mzjReYdWMI/pTUoP7l5/I0OK19r7FJRlqyplIr7OQtKVT/AIoqMv4m+2aKztLTn43ptPk8LJPX26umAUZQ43agtIp5DSNrkoL60sfdujP/AHKqaf8AvG0ofSF0Sny5bGagw783cY5ziv3qbl+JlGak+aZh4npc0b0vC3wRvTOutIawoupprUFnkZL61KE+WrH505bSX4Eke8ekk4v49DZExPZPi9bdYl4/Lpucr6e1nqvQvF3iBnNN+xXtne5qrTuLG6TirlU5PrCrHrCScpLs16o6fyF5HHYu7yM5JQtaFSu2+3uxcv8AA4802qktNWVWrJuvdQ9pqyfnOo3OTf3yImpt2hzXxBq7afFTk7zLs3h3xQ07xEsqqxzrWeVtIxd7jLqPLWtm+ifpOLae0o7p/B9CdlDfRqwcIaTy+s6tL8/nb2cKE2v9VoN06aXwclUl8dy+SLDTjm1qRNu4AD1sAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+wAHOvGjhTQs6d9xE0lj5vIKUq+Ys6cpS9tpfarRjv/AFtPvstlKPMtt9ik6VSnWowrUakalKpFThOL3Uotbpr4HejhGXdbnIfFvQP+TzVEcvjaPJpPM1nyxivcxt1J7un8KVR7uPkpbrs0YWjp0UnE9F4tfFpHzR+6FbHwbv7HJ2mcwdyrLM2Mua3rte7JfapVEvrU5Lo19/kfcGuJmJ3hy2HLfDeMlJ2mHQWgeIeM1xY1acaTx2Zs0vbcbVknOjv2nF/bpvykvk9mTY4/lC8oZG2y+IvZY7MWTcra7prdx9YSX2oS7OL7l/cPOJmP1lRWLvowxmpreG9zjpS/rEv9LRb+vTffp1j2fqWWHNF+k9307hXF6aynLbpeFhA8TTXQg3ETiZhuHmMhO7pzv8pcxbtMdRe06u3Tmk/sQT6OT+STZKiJmdoXt71pHNbs3mrNXYLRWAqZrUF6re3i+SEEuapXn5Qpx7yk/T8dkckcQ+KWpeIdSVlVlLD6eUuaONoVPfrbdnWmu7/VXRfHuR7U+p89rTPvOaku1XuYpxoUKfSjaQf2acf5yfV+bNQdToOERH9TUfp/dzGr4hbJM1x9IWJw54u5zQd1RsMpXuszplvadvUm6lazX6dGT6tLzg/u2ZeWe4YaW17KlrDSmaqYe/yMI1lf2CVShepro6tF7KT8m1tL16nJS7ln8HeJ0tDZqngM1Xb0vf1lyyl2x9aT+uv9nJ/WXk+vrvG4rwqtInNijp5x6e7LSavf+lm6wryOoMvcLkvcdiL9UbmfNFt0ZylGbT3337tb7fI6i+j/AIjFQ4Z0NV0vDucznJ1Kl/dPrOLjNxVH9WMEl7vx39CjHorA2uqdT4TJYi2r3GMyteEak47ynSm/Eptvfr7siRaUz93wtzMr/FW1Svpi7kvyljKS5nR2W3tFFfpJfWj9pfw43HaK36pmG3Jfmt2dX/caTVOfo6a07cZOpFVKkfco0n/pKj7L5eb+CZ9cFqLCamxEMtp/KW+SsqnapQnzbPbfaS7xfwezKY4oZ+plNVzxsG/ZMbvSUf0qn25f4fcS8t+Su8MuLa+NJppvXvPSEKvb26yF7WvrytKrc15udSbf1m/8PgfBDy7HqKqZmZ6vk9pm1ptPeTse7tdE2eA8edmDeYfF5CcZ3lhRq1I/VqKPLOPylHZr8TKs62fxkVDD601Hj4L6tOGQlVgv3anMj6Db4mUWmO0pWLWajF9F5j82Vk9VcSclp6+wlzrSndWl7QnbVfHxtJVHCS2e04bNPZ99jX2OGyGcyOJ0VgXy3+SatadTbdW9GMfztd+ijDf72kfSc40qcqk3tCEXKT9Eluyf/RMq0dQat1vqG7tUry2hbWtrKW+9GhPnk4r9pwi38jPebd5W+lvn4hkic9t4q6i0/hMfpzTuOwOLo+DZY+3hbUY+ajFJLf49N38TaBJIGbqAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANXn8DjNS6fvcFmbSN3j76lKjXoy7Si/5Nd0/JpM2gA4QyeDyWj9U5DRmYqSq3WOalb3M1t7Zayf5qsvjt7svSSZ8yz/AKUslaax4bV6dOKqVq15bznt1cGqfTf03e+3qVgabRtLi+KaeMObevaerzYxbzH298qTrKUK1GXPRr0pOnVoy/ShNdYv5GWDGOispe1LRas7SleA4s6007yUM9QWrcbHZOtDlo38I/8AJVf+636kQvNL5rivqfIalsuIGlq9/cNQWNuZ1rWta0o7qFJ05rdbdd+jTbb3Z9DCvsVjMml+UMfb3TS2UqlNOS+T7om4dZkw2i9Z6w6PDx2818PUxzQ1+U4Q8UMTFupoy4v6cF1r4yvC5hJeqj0l/Ahd7a3+Lly5bFZHGPfb/PLOpRX4yjt/Entvg7eyfNjL7KY2S7OzyFant9ylsZF5Z3OStpW+W1Dn8lQmuWVK7ytacJL0cd0mi7x/EWpp9XX7t08S0UxvETCtVKMo80ZKS9U90JwhVpypzipQmuVp+aJpX0Zgq0FG3tZWM0koztZuD+9dn95B6Scat1T9odxTp1506dSUVFyjF7bvbp6nScP4xTX28GabT+z3DqMebecfkkumtTV7vWNOzyVRzva1hTtp1Zd6/gLalN+rdLaL+MPiTq8u6VhYXF9Xe1K3pyqyfwS3KglKdrdW+Tt6aldWdSNWL7OST3cd/it195l3/EOhqSFHCPF1ba1ubikq8/F5peEppzSSXmkchxPh9tPqOWvWLdl9hzRanVJsXmsjoJYq/wADd17HUl5Qd5lpqe9Gp4z56VGVF+63CHK29t957eRspa1tstkKt5lZQtLu5qOc5JNUpTb3ezb93f0f4kMyl/PJZa8ydfaDua0qst30im+i+5bL7j94XDXWdUqzrK0sYTlRm1tKrUa6NJdorZ936l/r9Ho9Poq0y9LeUx33U2tmuak+LO1YWMmmlJNNPqmvM9NPQwf5O5Y4a9q2dOK28Cf56k/3ZPdP9lozqFW+38O7tKX/AKtCrun84yW6/FnCTDlrYqT1pbf79JZQHZ9QeIwB94A/M4xnTlTnFShNOMovs0+6LN+ibGMNT8TYQioxjdWiSXZLlqlZvsWb9E7rqjic/wDxlr/KqbKOg4LM+JaPZ1OADY6oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAByz9KyLlqnhil5Xd2/wAI03/gVl5FpfSnX/Svhk//ABV7/wAlMq3yRqv3cpxr/Mr9gAGCgAAAAAHj35Wk3F7Pqu6K6v8ASmSw+MrXNrkKN1b26dWVOdJxqOO+8tmntvtuyxtj51qSr0KtB9VUhKD3+KaJOn1GTT358U7SmabU3wW2r2nuq5NNKUWmmt0/VEcssdO21ROSg1TipTi/LZ9v5/wN1j9/ybQT7xjyv5rp/gZJ9Stp6ayuLLbvG0usi3JvEMa6p+0VLOx239ruYUmvWO+7/gizsXh7LDUa1CwhKFGrUdXklLmUW9lsvh0K9xlPx9aYWi+qjKpVf3RLSXY4r4iyc2q5fRR8TyWiK44np3/cGwBzKjB5gAAAB5LsWb9E7/rPxP8A/nLX+VUrJ9UWd9E9Nao4np/99tf5VTZR0HBP8y/2dTAA2OqAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcw/SculDXHDq2cVvJZCW/7lNFVeSLQ+lhbTo5LhxnEtoUMlWtJy9PEjBr/lkVfLeL5X3XQ1Wjq5TjVJjJW3sAAwUAAAAAAHnZ7ruup6Ntw9VTOl7Nk8naJbKleVEl6JvmX8z0z9Q0Xb6xu+nS6o06y+a3i/5IwGfV+EZfE0eOfTp+jsKW56Vt6xDP0rT8XXDn3VvZSfycpbfyLGIDoanzagzdw/sRpUl+DbJ8ux8+4tfn1d7e6i4nP9fb0iAAFSqwAAAAB4+xZf0U6+2t+KFtKm4v2m1qdfT86itfht3LQ+iZbSr5LiPnGt4XGSpW0Zevhxm3/wA8TZR0PBPrv9nUYANjqQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFO/SS0pX1VwKzEbKm532KcMpbqK3e9LrPb48jmcv4jIQy2DsslCXN7RSU5fCXaS/FM7+rUYV6UqVSKnCScZRkt1JPo0zgXUelqvCvizktE11KGFyU3fYWrL6rhJ9aW/rF+7+6v0jG3ZU8U085cPNXvVlg88z00uLAAAAAAAAQrWtLlymJuV9uNWi/4SX8mR8lOu4pYmwuNutK9gvukpJkWXwPonw3fm0tq+kup0c82nr+je8PoVHHN3MoNKpdqMW10fKmnt+JN0RrRC/wCjLmunPdVpfP3tv8CTHCamd81595UmutzZ7AAIyCAAAAGBh5TIUsVibnI1ntChTcvm/JfjsdPfRv0rX0twOw6vabhfZZzytwmtnvVacN/3FA5o07pStxP4o4zRVKLeIspRv83Vj2jSi/dpfOT2X37+TO9KNOnSpQp0oRhTjFRjGK2SXkkbaxs7HhWnnFh57d7PoADNcgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABWnGLhbZ8T9ESxyqxtMzZydzjL7bZ0Ky8m115JbbP7n3RZYA/ntjrzI0r+705qSzljtRYyXhXdtUWzlt9uPrF9910679mbXc6Y4wcFsVxJsaWRs7lYfVVlHayydNbb+ap1dusofxj5eafJ9xeZnSudelOIGOlhs1T+pVl/UXcfKcJ9tn+HyfQ1Wq5XX8MtWZy4Y3j0bkHie/Y9MFAAAPAA+VxcUbS3lcXNaFGjH606kuVL72HsRNp2jujevP+qkpbfUuaMv+Minml8TZat1Xp7JYapjrK/det41OTcKUnFKMt299jRQyuJqXEaSyMKbb6OvTlTi/va6HZ8A1eHBjtXLaI3dVosOSuCItG3WU80QktIW23nUrP8A+5IkZo9J21S00xb0ajhL36rjOnOM4zTqNppxbTRvDkc075LT7ue1cf17/cABqRQAB6GsyF5fTvrPAaftJZHUOSmqVnaU+r3f25ekV3bfTp6Jn3sq2R1Dm46b0bYyzebqd6dJ/mreP6dap2hFfj5HUvCPg1jOHVtVyl/cRzGq76P+eZKcekV/2VJP6sF0+MtuvklnFV5oOG2yTGTLG0fy2PB7hhZ8MdGKwlWjeZq+l7TlL7zr1n5Lf7Ed9l977ssnYJbJA2us22AAHoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABF9Z6C0vr/Byw+qsTRyFs93TlLpUoyf2qc11g/l389yUADi7VvALiNoGU7nQ1w9Z4CLb/J9faN7Qj6R8pr9nr+qV3Zavxla8njsjCvhslTfLUtL+DpTjL067fx2P6K7L0Irqzh3ovXNv4Gq9OWWU2W0alWntVh+zUW0l9zMZiJV2o4fhz9ZjafWHGqacVJNNPs12Z7v03Lcy30T8daVZ3Og9bZPBPurS8iry3+XXaSXz3IVd/R444zuvZrfU2mFbP/WYeJCSX7LpvqYTSVLfguWJ+W0TCvs9n7fC0IRVOVzf12oW9pT3c6sn0XRddt/x7IuHhr9G2rnqFtqnjDOrdXNReJQ0/Gbp0bWL6rxeV7uXrFPp5tvop/wt+j3p7QeVWp8veT1HqZ/VvLhe5bdNn4UX2ff3n126LYuzbpsuhnWNl3o9DTTV9berT4nS2ncFZxs8Ngsdj7aK2VO2tYU1t9y6jK6W07nLOVlmMFjshbSWzpXNtCpHb70bkGSwcv8AEH6PUtOWlzn+E8Jrk3rXGnKs3OlXXm6En1hP9Vtp9l6FK4fUNhmHUo0vEt7yi3GtaV1y1abXRpr4Pp8PPY/oRKO5SPFb6OuneIeReo8ZdS0/qaK3d5br3LlpdPFitveXT31126Pcwmu6t1fD8eo69rernzcLd+TZvLb6NfHWN6reprXBwtYdPaHUnUk1+z4W/wCLLCwX0UrSSjU1xr3MZxvrO1tGrSjJ+j23k18tjHklT14Lk362hRN9qKwtLiNjb+JksjUfLTsbKLrVpv02jvsTrSnAHiNr2pTu9c3L0dp+Wzlj6ElK9rx9JeUN/wBbr+qdUaT4e6M0Na+BpXTlli91tKpSp71Z/tVHvKX3slHKl5IzisQuNNw7Dg6x1n1lGdF6E0toDAxw2lcRRx9t0dRx96pWl+lUm+s38/u2JNseoGSyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAbL0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//9k=';
+
+/* 复制提示词 */
+document.getElementById('copyBtn').addEventListener('click', function(){
+  const text = document.getElementById('promptText').innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    this.textContent = '已复制 ✓';
+    setTimeout(()=>{ this.textContent = '复制提示词'; }, 1800);
+  });
+});
+
+/* 舞台鼠标倾斜 */
+const stage = document.querySelector('.stage');
+const holder = document.getElementById('charHolder');
+stage.addEventListener('mousemove', e=>{
+  const r = stage.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width - 0.5;
+  const y = (e.clientY - r.top) / r.height - 0.5;
+  holder.style.transform = `perspective(700px) rotateY(${x*8}deg) rotateX(${-y*6}deg)`;
+});
+stage.addEventListener('mouseleave', ()=>{
+  holder.style.transform = '';
+});
+
+/* ===== 折叠 / 展开（基本角色与三形态常开，其余默认收起） ===== */
+document.querySelectorAll('section').forEach(sec=>{
+  if(sec.id==='hero'||sec.id==='trio') return;
+  const head = sec.querySelector('.sec-head');
+  if(!head) return;
+  const body = document.createElement('div');
+  body.className = 'fold-body';
+  while(head.nextSibling) body.appendChild(head.nextSibling);
+  sec.appendChild(body);
+  sec.classList.add('foldable');
+  const arrow = document.createElement('span');
+  arrow.className = 'fold-arrow';
+  arrow.textContent = '▾';
+  head.appendChild(arrow);
+  head.addEventListener('click', ()=> sec.classList.toggle('open'));
+});
+</script>
+</body>
+</html>
