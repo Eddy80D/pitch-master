@@ -23,6 +23,12 @@
   .badge.approved,.badge.running { color:var(--blue); background:rgba(106,159,224,.12); }
   .badge.done { color:var(--green); background:rgba(88,192,138,.12); }
   .badge.failed,.badge.reworked { color:var(--red); background:rgba(224,106,106,.12); }
+  .badge.test { color:var(--muted); background:#1b1b23; }
+  .badge.verify { color:var(--gold); background:rgba(217,180,91,.12); }
+  .badge.evaded { color:var(--red); background:rgba(224,106,106,.12); }
+  .tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .tabs button { background:transparent; color:var(--muted); border:1px solid var(--line); }
+  .tabs button.active { color:#17140b; background:var(--gold); border-color:var(--gold); }
   button { background:var(--gold); color:#17140b; border:0; border-radius:8px; padding:8px 14px; font-weight:700; cursor:pointer; }
   button.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); font-weight:500; }
   button.danger { background:var(--red); color:#1a0b0b; }
@@ -88,6 +94,12 @@
     </div>
   </section>
 
+  <div id="tabs" class="tabs">
+    <button type="button" data-filter="all" class="active">全部</button>
+    <button type="button" data-filter="unverified">待核验</button>
+    <button type="button" data-filter="test">测试单</button>
+  </div>
+
   <div id="orders"></div>
 </main>
 
@@ -107,6 +119,17 @@
   const params = new URLSearchParams(location.search);
   let token = params.get("token") || "";
   let drawerId = null;
+  let filter = "all";
+
+  document.querySelectorAll("#tabs button").forEach((button) => {
+    button.addEventListener("click", () => {
+      filter = button.dataset.filter;
+      document.querySelectorAll("#tabs button").forEach((item) => {
+        item.classList.toggle("active", item === button);
+      });
+      load();
+    });
+  });
 
   $("#token").value = token;
   $("#save-token").addEventListener("click", () => {
@@ -195,8 +218,11 @@
       ["累计成交", `${stats.total_count} 单`],
       ["累计营业额", `¥${stats.total_revenue}`],
       ["待放行", `${stats.pending_count} 单`],
+      ["待核验", `${stats.unverified_count ?? 0} 单`],
+      ["逃单", `${stats.evaded_count ?? 0} 单`],
       ["重审单", `${stats.rework_count} 单`],
       ["建议抽检", `${stats.suggested_count} 单`],
+      ["测试单", `${stats.test_count ?? 0} 单`],
     ];
     $("#tiles").replaceChildren(...tiles.map(([k, v]) => {
       const tile = el("div", "tile");
@@ -210,11 +236,18 @@
   // ---------------- 订单列表
   function renderOrders(list) {
     const box = $("#orders");
-    if (!list.length) {
+    const visible = list.filter((order) => {
+      if (filter === "unverified") {
+        return order.auto_approved && order.verify_status === "unverified";
+      }
+      if (filter === "test") return order.is_test;
+      return true;
+    });
+    if (!visible.length) {
       box.replaceChildren(el("div", "empty", "暂无订单"));
       return;
     }
-    box.replaceChildren(...list.map((order) => {
+    box.replaceChildren(...visible.map((order) => {
       const card = el("div", "card");
       const row = el("div", "row");
       row.append(
@@ -224,6 +257,13 @@
         el("span", `badge ${order.status}`, STATUS_LABEL[order.status] || order.status),
         el("span", "hint", `¥${order.price}`)
       );
+      if (order.is_test) row.append(el("span", "badge test", "测试"));
+      if (order.auto_approved && order.verify_status === "unverified") {
+        row.append(el("span", "badge verify", "待核验"));
+      }
+      if (order.verify_status === "evaded") {
+        row.append(el("span", "badge evaded", "逃单"));
+      }
       if (order.qa_suggested) row.append(el("span", "flag", "⚑ 建议抽检"));
       if (order.qa_mark === "rework") row.append(el("span", "flag", "已打回"));
 
@@ -231,6 +271,18 @@
       approveBtn.disabled = order.status !== "pending";
       approveBtn.addEventListener("click", () => approve(order.order_id));
       row.append(approveBtn);
+
+      if (order.auto_approved && order.verify_status === "unverified") {
+        const verifyBtn = el("button", "", "已核验");
+        verifyBtn.addEventListener("click", () => verifyOrder(order.order_id));
+        const evadeBtn = el("button", "danger", "逃单");
+        evadeBtn.addEventListener("click", () => evadeOrder(order.order_id));
+        row.append(verifyBtn, evadeBtn);
+      }
+
+      const testBtn = el("button", "ghost", order.is_test ? "取消测试" : "标为测试");
+      testBtn.addEventListener("click", () => markTest(order.order_id, !order.is_test));
+      row.append(testBtn);
 
       const detailBtn = el("button", "ghost", "详情");
       detailBtn.addEventListener("click", () => openDetail(order.order_id));
@@ -247,6 +299,32 @@
   async function approve(id) {
     try {
       await api(`/api/admin/approve/${id}`, { method: "POST" });
+      await load();
+    } catch (err) { alert(err.message); }
+  }
+
+  async function verifyOrder(id) {
+    try {
+      await api(`/api/admin/verify/${id}`, { method: "POST" });
+      await load();
+    } catch (err) { alert(err.message); }
+  }
+
+  async function evadeOrder(id) {
+    if (!confirm("标记为逃单？")) return;
+    try {
+      await api(`/api/admin/evade/${id}`, { method: "POST" });
+      await load();
+    } catch (err) { alert(err.message); }
+  }
+
+  async function markTest(id, isTest) {
+    try {
+      await api(`/api/admin/test/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_test: isTest }),
+      });
       await load();
     } catch (err) { alert(err.message); }
   }
@@ -319,6 +397,14 @@
     if (order.rework_of) {
       box.append(el("div", "hint", `重审自 ${order.rework_of}｜原因：${order.rework_reason || "-"}`));
     }
+    if (order.is_test) {
+      box.append(el("div", "flag", "测试单：不计入营业额与质检建议"));
+    }
+    if (order.auto_approved) {
+      const verifyLabel = order.verify_status === "verified" ? "已核验"
+        : order.verify_status === "evaded" ? "逃单" : "待核验";
+      box.append(el("div", "hint", `自动放行 · 核验状态：${verifyLabel}`));
+    }
 
     // 老板评语
     box.append(el("div", "chart-title", "老板亲签评语"));
@@ -353,6 +439,13 @@
       const freeBtn = el("button", "", "免费重审");
       freeBtn.addEventListener("click", () => rework(order.order_id));
       qaRow.append(freeBtn);
+    }
+    if (order.auto_approved && order.verify_status === "unverified") {
+      const verifyBtn = el("button", "", "已核验");
+      verifyBtn.addEventListener("click", () => verifyOrder(order.order_id));
+      const evadeBtn = el("button", "danger", "逃单");
+      evadeBtn.addEventListener("click", () => evadeOrder(order.order_id));
+      qaRow.append(verifyBtn, evadeBtn);
     }
     if (order.qa_mark !== "none") {
       qaRow.append(el("span", "hint", `当前：${order.qa_mark === "pass" ? "通过" : "已打回"}`));

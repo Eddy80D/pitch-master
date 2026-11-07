@@ -12,6 +12,7 @@ import asyncio
 import json
 import logging
 import re
+import time
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator
 
@@ -65,6 +66,10 @@ class TextBody(BaseModel):
 class QaBody(BaseModel):
     mark: str
     reason: str = ""
+
+
+class TestFlagBody(BaseModel):
+    is_test: bool
 
 
 def _validate_repo_url(repo_url: str) -> str:
@@ -166,9 +171,12 @@ async def _run_precheck(session: state_machine.Session) -> None:
             events.PAYMENT_WAITING,
             qr_url="/static/pay_qr.png",
             price=session.price,
+            auto_approve=config.AUTO_APPROVE,
         )
     else:
-        orders.store.transition(session.id, "approved")
+        orders.store.transition(
+            session.id, "approved", verify_status="verified"
+        )
         _start_pipeline(session)
 
 
@@ -510,12 +518,30 @@ async def health() -> dict[str, Any]:
         "payment_required": config.PAYMENT_REQUIRED,
         "precheck_enabled": config.PRECHECK_ENABLED,
         "price_yuan": config.PRICE_YUAN,
+        "auto_approve": config.AUTO_APPROVE,
+        "max_active_sessions_per_ip": config.MAX_ACTIVE_SESSIONS_PER_IP,
     }
 
 
 @app.post("/api/sessions")
-async def create_session(body: CreateSessionBody) -> dict[str, Any]:
+async def create_session(
+    body: CreateSessionBody,
+    request: Request,
+) -> dict[str, Any]:
     repo_url = _validate_repo_url(body.repo_url)
+    is_test = not config.PAYMENT_REQUIRED
+    client_ip = request.client.host if request.client else ""
+
+    if (
+        client_ip
+        and orders.store.active_count_by_ip(client_ip)
+        >= config.MAX_ACTIVE_SESSIONS_PER_IP
+    ):
+        raise HTTPException(
+            status_code=429,
+            detail="当前排队人数较多，请稍后再试",
+        )
+
     session = state_machine.store.create(repo_url, body.prd, body.demo_url)
     session.price = config.PRICE_YUAN
     orders.store.create(
@@ -524,6 +550,8 @@ async def create_session(body: CreateSessionBody) -> dict[str, Any]:
         body.prd,
         body.demo_url,
         price=config.PRICE_YUAN,
+        is_test=is_test,
+        client_ip=client_ip,
     )
     await session.emit(
         events.SESSION_CREATED,
@@ -546,6 +574,7 @@ async def create_session(body: CreateSessionBody) -> dict[str, Any]:
             events.PAYMENT_WAITING,
             qr_url="/static/pay_qr.png",
             price=session.price,
+            auto_approve=config.AUTO_APPROVE,
         )
         return {
             "session_id": session.id,
@@ -554,7 +583,7 @@ async def create_session(body: CreateSessionBody) -> dict[str, Any]:
         }
 
     session.paid_status = "approved"
-    orders.store.transition(session.id, "approved")
+    orders.store.transition(session.id, "approved", verify_status="verified")
     _start_pipeline(session)
     return {
         "session_id": session.id,
@@ -566,12 +595,23 @@ async def create_session(body: CreateSessionBody) -> dict[str, Any]:
 @app.post("/api/sessions/{session_id}/paid")
 async def mark_paid(session_id: str) -> dict[str, str]:
     session = _get_session(session_id)
-    if session.paid_status == "pending":
-        return {"status": "pending"}
     if session.paid_status == "approved":
+        return {"status": "approved"}
+    if session.paid_status not in {"unpaid", "pending"}:
         raise HTTPException(status_code=409, detail="当前订单状态不能标记支付")
-    if session.paid_status != "unpaid":
-        return {"status": session.paid_status}
+
+    if config.AUTO_APPROVE:
+        session.paid_status = "approved"
+        orders.store.transition(
+            session.id,
+            "approved",
+            auto_approved=True,
+            verify_status="unverified",
+        )
+        await session.emit(events.PAYMENT_APPROVED)
+        _start_pipeline(session)
+        return {"status": "approved"}
+
     session.paid_status = "pending"
     orders.store.transition(session.id, "pending")
     await session.emit(events.PAYMENT_PENDING)
@@ -630,7 +670,12 @@ async def admin_approve(session_id: str, token: str = "") -> dict[str, bool]:
     if session.paid_status not in {"pending", "approved"}:
         raise HTTPException(status_code=409, detail="订单尚未标记支付")
     session.paid_status = "approved"
-    orders.store.transition(session.id, "approved")
+    orders.store.transition(
+        session.id,
+        "approved",
+        verify_status="verified",
+        verified_at=time.time(),
+    )
     await session.emit(events.PAYMENT_APPROVED)
     _start_pipeline(session)
     return {"ok": True}
@@ -646,6 +691,53 @@ async def admin_comment(session_id: str, body: TextBody, token: str = "") -> dic
     orders.store.transition(
         session_id, None, owner_comment=body.text.strip()[:500]
     )
+    return {"ok": True}
+
+
+@app.post("/api/admin/verify/{session_id}")
+async def admin_verify(session_id: str, token: str = "") -> dict[str, bool]:
+    _require_admin(token)
+    order = orders.store.get(session_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    orders.store.transition(
+        session_id,
+        None,
+        verify_status="verified",
+        verified_at=time.time(),
+    )
+    return {"ok": True}
+
+
+@app.post("/api/admin/evade/{session_id}")
+async def admin_evade(session_id: str, token: str = "") -> dict[str, bool]:
+    _require_admin(token)
+    order = orders.store.get(session_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    orders.store.transition(
+        session_id,
+        None,
+        verify_status="evaded",
+        verified_at=time.time(),
+    )
+    return {"ok": True}
+
+
+@app.post("/api/admin/test/{session_id}")
+async def admin_test_flag(
+    session_id: str,
+    body: TestFlagBody,
+    token: str = "",
+) -> dict[str, bool]:
+    _require_admin(token)
+    order = orders.store.get(session_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    fields: dict[str, Any] = {"is_test": body.is_test}
+    if body.is_test:
+        fields.update(qa_suggested=False, qa_suggest_reasons=[])
+    orders.store.transition(session_id, None, **fields)
     return {"ok": True}
 
 

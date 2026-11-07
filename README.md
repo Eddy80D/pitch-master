@@ -21,7 +21,13 @@ python -m uvicorn app.main:app --reload --port 8000
 - `PAYMENT_REQUIRED=False`：跳过收款，预检后直接开跑（开发/评审演示用）。
 - `PRICE_YUAN=19.9`：单场定价；`ADMIN_TOKEN` 为空时所有 `/api/admin/*` 返回 404。
 
-老板后台：营收看板（今日/累计/待放行 + 纯 SVG 柱状/折线图）、订单列表、订单详情（transcript / 初评终评 / 质检通过或打回 / 免费重审 / 老板亲签）。订单流水写 `logs/orders.jsonl`，重启回放。
+老板后台：营收看板（今日/累计/待放行/待核验/逃单/测试单 + 纯 SVG 柱状/折线图）、订单列表、订单详情（transcript / 初评终评 / 质检通过或打回 / 免费重审 / 老板亲签）。订单流水写 `logs/orders.jsonl`，重启回放。
+
+### 营业打磨（D3.5）
+
+- `AUTO_APPROVE=True`（默认）：用户点「我已支付」后立即开审；订单进入「待核验」，老板事后在后台标记「已核验 / 逃单」。`False` 回退人工放行。
+- `MAX_ACTIVE_SESSIONS_PER_IP=3`：同一 IP 最多 3 个非终态会话，超限返回 429「当前排队人数较多，请稍后再试」。
+- 测试单：`PAYMENT_REQUIRED=False` 创建的订单自动标记为测试，不计营业额、不触发质检建议；后台可手动「标为测试 / 取消测试」。
 
 ### 闭环接口
 
@@ -42,6 +48,9 @@ python -m uvicorn app.main:app --reload --port 8000
 | POST | `/api/admin/qa/{id}?token=…` | 质检通过 / 打回 |
 | POST | `/api/admin/rework/{id}?token=…` | 免费重审（新单 price=0） |
 | POST | `/api/admin/refund/{id}?token=…` | 标记线下退款 |
+| POST | `/api/admin/verify/{id}?token=…` | 自动放行单标记已核验 |
+| POST | `/api/admin/evade/{id}?token=…` | 标记逃单 |
+| POST | `/api/admin/test/{id}?token=…` | 标为/取消测试单 |
 
 ## 自测
 
@@ -51,6 +60,7 @@ python scripts/test_state_machine.py         # T2/T9：等待点、超时、skip
 python scripts/test_full_loop.py             # T16：mock 全流程（不调 API）
 python scripts/test_patch.py                 # D2 补丁：支付/admin/PRD 上限/HTML 提取（不调 API）
 python scripts/test_d3.py                    # D3：预检/订单持久化/统计/质检/重审（不调 API）
+python scripts/test_polish.py                # D3.5：测试单/自动放行/核验/IP 护栏（不调 API）
 python scripts/test_timer.py                 # 限时显示：需用短超时启动服务（见脚本头注释）
 python scripts/test_e2e.py                   # T16：浏览器端到端（需 Chrome + playwright，会调真实 API）
 python scripts/business_report.py            # 经营流水与成本分析（纯标准库，零 LLM）

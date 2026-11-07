@@ -37,6 +37,13 @@ class Order(BaseModel):
     note: str = ""
     totals: dict[str, Any] = Field(default_factory=dict)
 
+    # D3.5：营业数据纯度 / 自动放行核验
+    is_test: bool = False
+    auto_approved: bool = False
+    verify_status: str = "unverified"  # unverified | verified | evaded
+    verified_at: float | None = None
+    client_ip: str = ""
+
 
 class OrderStore:
     def __init__(self) -> None:
@@ -102,6 +109,8 @@ class OrderStore:
         prd: str | None = None,
         demo_url: str | None = None,
         price: float | None = None,
+        is_test: bool = False,
+        client_ip: str = "",
     ) -> Order:
         order = Order(
             order_id=order_id,
@@ -110,8 +119,20 @@ class OrderStore:
             demo_url=demo_url,
             price=config.PRICE_YUAN if price is None else price,
             created_at=time.time(),
+            is_test=is_test,
+            client_ip=client_ip,
         )
         return self.upsert(order)
+
+    def active_count_by_ip(self, client_ip: str) -> int:
+        if not client_ip:
+            return 0
+        return sum(
+            1
+            for order in self._orders.values()
+            if order.client_ip == client_ip
+            and order.status in {"unpaid", "pending", "approved", "running"}
+        )
 
     def get(self, order_id: str) -> Order | None:
         return self._orders.get(order_id)
@@ -147,7 +168,8 @@ class OrderStore:
     # ------------------------------------------------------------ 统计
     def stats(self, now: float | None = None) -> dict[str, Any]:
         now = now or time.time()
-        orders = self.all()
+        all_orders = self.all()
+        orders = [order for order in all_orders if not order.is_test]
         today = dt.date.today()
 
         def _date(ts: float | None) -> dt.date | None:
@@ -196,6 +218,15 @@ class OrderStore:
             "pending_count": sum(1 for order in orders if order.status == "pending"),
             "rework_count": sum(1 for order in orders if order.rework_of),
             "suggested_count": sum(1 for order in orders if order.qa_suggested),
+            "test_count": sum(1 for order in all_orders if order.is_test),
+            "unverified_count": sum(
+                1
+                for order in orders
+                if order.auto_approved and order.verify_status == "unverified"
+            ),
+            "evaded_count": sum(
+                1 for order in orders if order.verify_status == "evaded"
+            ),
             "hourly": hourly,
             "cumulative": cumulative,
         }
@@ -207,6 +238,8 @@ class OrderStore:
         finals: list[Any],
         totals: dict[str, Any],
     ) -> list[str]:
+        if order.is_test:
+            return []
         reasons: list[str] = []
         scored = [
             item

@@ -55,6 +55,18 @@ PRECHECK_ENABLED: bool = os.getenv("PRECHECK_ENABLED", "True").lower() in {
 }
 PRICE_YUAN: float = float(os.getenv("PRICE_YUAN", "19.9"))
 
+# —— D3.5 营业打磨 ——
+# 付款即开审，老板事后核验；False 回退人工放行
+AUTO_APPROVE: bool = os.getenv("AUTO_APPROVE", "True").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+# 单 IP 最多同时存在的非终态会话数
+MAX_ACTIVE_SESSIONS_PER_IP: int = int(
+    os.getenv("MAX_ACTIVE_SESSIONS_PER_IP", "3")
+)
+
 LOG_DIR: Path = _path_env("LOG_DIR", ROOT / "logs")
 USAGE_FILE: Path = LOG_DIR / "usage.jsonl"
 SESSIONS_DIR: Path = LOG_DIR / "sessions"

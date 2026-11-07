@@ -110,15 +110,16 @@ def fmt_ts(ts: float | None) -> str:
 def build_report() -> tuple[str, dict]:
     pricing = load_pricing()
     usage = load_usage()
-    orders = load_orders()
+    all_orders = load_orders()
+    test_count = sum(1 for order in all_orders if order.get("is_test"))
+    orders = [order for order in all_orders if not order.get("is_test")]
     sessions = load_sessions()
 
     # ---------------------------------------------------------------- 流水
-    orders_missing = not orders
+    orders_missing = not all_orders
     rows: list[dict] = []
-    if orders:
-        by_id = {order["order_id"]: order for order in orders}
-        for order in sorted(orders, key=lambda item: item.get("created_at", 0)):
+    if all_orders:
+        for order in sorted(all_orders, key=lambda item: item.get("created_at", 0)):
             rows.append(
                 {
                     "id": order["order_id"],
@@ -134,6 +135,7 @@ def build_report() -> tuple[str, dict]:
                     ),
                     "approved": bool(order.get("approved_at")),
                     "rework_of": order.get("rework_of"),
+                    "is_test": bool(order.get("is_test")),
                     "source": "orders",
                 }
             )
@@ -157,11 +159,17 @@ def build_report() -> tuple[str, dict]:
                 }
             )
 
-    total_orders = len(rows)
-    approved_rows = [row for row in rows if row["approved"]]
+    total_orders = len(orders) if all_orders else len(rows)
+    approved_rows = [
+        row for row in rows if row["approved"] and not row.get("is_test")
+    ]
     revenue = round(sum(row["price"] for row in approved_rows), 2)
-    rework_count = sum(1 for row in rows if row["rework_of"])
-    done_raw = sum(1 for row in rows if row["status"] == "done")
+    rework_count = sum(
+        1 for row in rows if row["rework_of"] and not row.get("is_test")
+    )
+    done_raw = sum(
+        1 for row in rows if row["status"] == "done" and not row.get("is_test")
+    )
     done_count = max(1, done_raw)
 
     # ---------------------------------------------------------------- Usage
@@ -232,14 +240,15 @@ def build_report() -> tuple[str, dict]:
         if len(repo) > 40:
             repo = repo[:37] + "..."
         duration = f"{row['duration']:.0f}s" if row["duration"] else "-"
+        status = row["status"] + ("（测试）" if row.get("is_test") else "")
         lines.append(
-            f"| {fmt_ts(row['created_at'])} | {str(row['id'])[:8]} | {repo} | {row['status']} | "
+            f"| {fmt_ts(row['created_at'])} | {str(row['id'])[:8]} | {repo} | {status} | "
             f"¥{row['price']:.2f} | {duration} |"
         )
     lines.append("")
     lines.append(
-        f"**汇总**：总单数 {total_orders} ｜ 成交 {len(approved_rows)} ｜ "
-        f"营业额 ¥{revenue:.2f} ｜ 重审 {rework_count} 单"
+        f"**汇总**：真实总单数 {total_orders} ｜ 成交 {len(approved_rows)} ｜ "
+        f"营业额 ¥{revenue:.2f} ｜ 重审 {rework_count} 单 ｜ 测试 {test_count} 笔（不计入）"
         + ("（仅会话记录）" if orders_missing else "")
     )
     lines.append("")

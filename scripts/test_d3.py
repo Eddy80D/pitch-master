@@ -6,7 +6,12 @@ import asyncio
 import shutil
 import sys
 import tempfile
+import types
 from pathlib import Path
+
+
+def fake_request():
+    return types.SimpleNamespace(client=types.SimpleNamespace(host="127.0.0.1"))
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -81,6 +86,7 @@ async def run() -> int:
     original = {
         "PRECHECK_ENABLED": config.PRECHECK_ENABLED,
         "PAYMENT_REQUIRED": config.PAYMENT_REQUIRED,
+        "AUTO_APPROVE": config.AUTO_APPROVE,
         "ADMIN_TOKEN": config.ADMIN_TOKEN,
         "ORDERS_FILE": config.ORDERS_FILE,
         "ORDERS_SUMMARY_FILE": config.ORDERS_SUMMARY_FILE,
@@ -91,6 +97,7 @@ async def run() -> int:
     config.ORDERS_SUMMARY_FILE = tmpdir / "orders_summary.json"
     config.PRECHECK_ENABLED = True
     config.PAYMENT_REQUIRED = True
+    config.AUTO_APPROVE = False
     config.ADMIN_TOKEN = "test-token"
 
     orders.store._orders.clear()
@@ -127,7 +134,8 @@ async def run() -> int:
 
         # ---------------- 预检 + 支付
         result = await main.create_session(
-            main.CreateSessionBody(repo_url="https://github.com/demo/precheck")
+            main.CreateSessionBody(repo_url="https://github.com/demo/precheck"),
+            fake_request(),
         )
         session = state_machine.store.get(result["session_id"])
         await wait_for(lambda: session.precheck_done)
@@ -189,7 +197,8 @@ async def run() -> int:
         # ---------------- 坏仓库：付费前报错
         bad_repo = True
         bad_result = await main.create_session(
-            main.CreateSessionBody(repo_url="https://github.com/demo/bad")
+            main.CreateSessionBody(repo_url="https://github.com/demo/bad"),
+            fake_request(),
         )
         bad_session = state_machine.store.get(bad_result["session_id"])
         await wait_for(lambda: bad_session.closed, timeout=5)

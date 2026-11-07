@@ -9,7 +9,12 @@ import asyncio
 import json
 import sys
 import tempfile
+import types
 from pathlib import Path
+
+
+def fake_request():
+    return types.SimpleNamespace(client=types.SimpleNamespace(host="127.0.0.1"))
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -128,6 +133,7 @@ async def test_payment_and_admin() -> None:
     original_required = config.PAYMENT_REQUIRED
     original_token = config.ADMIN_TOKEN
     original_precheck = config.PRECHECK_ENABLED
+    original_auto_approve = config.AUTO_APPROVE
     original_orders_file = config.ORDERS_FILE
     original_summary_file = config.ORDERS_SUMMARY_FILE
 
@@ -145,12 +151,14 @@ async def test_payment_and_admin() -> None:
     main._run_pipeline = fake_pipeline
     config.PAYMENT_REQUIRED = True
     config.PRECHECK_ENABLED = False
+    config.AUTO_APPROVE = False
     config.ADMIN_TOKEN = "test-token"
     state_machine.store._sessions.clear()
 
     try:
         result = await main.create_session(
-            main.CreateSessionBody(repo_url="https://github.com/demo/demo")
+            main.CreateSessionBody(repo_url="https://github.com/demo/demo"),
+            fake_request(),
         )
         session_id = result["session_id"]
         session = state_machine.store.get(session_id)
@@ -197,7 +205,8 @@ async def test_payment_and_admin() -> None:
         # PAYMENT_REQUIRED=False 直接启动
         config.PAYMENT_REQUIRED = False
         result2 = await main.create_session(
-            main.CreateSessionBody(repo_url="https://github.com/demo/demo2")
+            main.CreateSessionBody(repo_url="https://github.com/demo/demo2"),
+            fake_request(),
         )
         assert result2["payment_required"] is False
         session2 = state_machine.store.get(result2["session_id"])
@@ -207,6 +216,7 @@ async def test_payment_and_admin() -> None:
         main._run_pipeline = original_pipeline
         config.PAYMENT_REQUIRED = original_required
         config.PRECHECK_ENABLED = original_precheck
+        config.AUTO_APPROVE = original_auto_approve
         config.ADMIN_TOKEN = original_token
         config.ORDERS_FILE = original_orders_file
         config.ORDERS_SUMMARY_FILE = original_summary_file

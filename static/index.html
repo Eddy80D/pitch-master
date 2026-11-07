@@ -606,7 +606,9 @@
         hide(form);
         show(payBox);
         $("#pay-title").textContent = `扫码支付 ¥${payload.price ?? 19.9} 后开始评审`;
-        $("#pay-hint").textContent = "扫码支付后点「我已支付」，老板放行后自动开跑。";
+        $("#pay-hint").textContent = payload.auto_approve
+          ? "支付后立即开审，老板事后核验。"
+          : "扫码支付后点「我已支付」，老板放行后自动开跑。";
         break;
       case "payment.pending":
         show(payBox);
@@ -892,8 +894,10 @@
   $("#paid-btn").addEventListener("click", async () => {
     $("#paid-btn").disabled = true;
     try {
-      await post(`/api/sessions/${sessionId}/paid`, {});
-      $("#pay-hint").textContent = "已通知老板，等待放行…";
+      const data = await post(`/api/sessions/${sessionId}/paid`, {});
+      $("#pay-hint").textContent = data.status === "approved"
+        ? "已支付，评审开始…"
+        : "已通知老板，等待放行…";
     } catch (err) {
       $("#paid-btn").disabled = false;
       $("#pay-hint").textContent = String(err.message || err);
